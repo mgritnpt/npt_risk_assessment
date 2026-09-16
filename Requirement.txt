@@ -1,0 +1,1439 @@
+ต้องการทำ IT Risk Assessment Form ใน Excel ให้สามารถใช้ร่วมกันและรองรับแนวคิดของ IATF 16949, ISO 9001, JAMA/JAPIA และ ISO/IEC 27001 ผมแนะนำว่าไม่ควรทำเป็นแบบประเมินแยก 4 มาตรฐาน แต่ให้ทำเป็น Enterprise IT Risk Assessment Form แล้วมีช่องระบุว่า Risk นั้นเกี่ยวข้องกับมาตรฐานใด
+
+โครงสร้างควรครอบคลุมตั้งแต่ ระบุความเสี่ยง → ประเมิน → ควบคุม → Action → ติดตาม → ประเมิน Residual Risk → ปิดความเสี่ยง
+
+1. โครงสร้าง ที่คิดไว้ (แก้ไขเพิ่มเติมได้
+
+
+Sheet	ชื่อ	วัตถุประสงค์
+1	Risk_Register	รายการความเสี่ยงทั้งหมด
+2	Risk_Assessment	ประเมิน Likelihood / Impact / Risk Score
+3	Risk_Control	มาตรการควบคุมที่มีอยู่
+4	Risk_Treatment	แผนจัดการ/ลดความเสี่ยง
+5	Risk_Monitoring	ติดตาม Action และสถานะ
+6	Risk_Criteria	เกณฑ์คะแนน Risk
+7	Master_Data	Dropdown / ข้อมูลมาตรฐาน
+2. Sheet หลัก: Risk Register
+
+นี่ควรเป็น หัวใจของระบบ
+
+A. ข้อมูลทั่วไปของ Risk
+Field	รายละเอียด
+Risk ID	รหัสความเสี่ยง เช่น IT-R-2026-001
+Assessment Date	วันที่ประเมิน
+Review Date	วันที่ทบทวน
+Assessment Type	Initial / Periodic / Change / Incident
+Risk Owner	ผู้รับผิดชอบ Risk
+Department	หน่วยงาน
+Process	กระบวนการที่เกี่ยวข้อง
+Location	สถานที่ / Site
+BU	Business Unit
+Assessor	ผู้ประเมิน
+Approver	ผู้อนุมัติ
+3. Risk Identification
+
+ต้องตอบให้ได้ว่า
+
+"อะไรคือสิ่งที่อาจเกิดขึ้น และจะส่งผลกระทบอย่างไร?"
+
+หัวข้อที่ควรมี
+Field	ตัวอย่าง
+Asset / Resource	Server / PC / Network / Application
+Asset ID	Server ID
+Information / Data	Personal Data / Production Data
+Process	Production / Accounting / HR
+Risk Category	Cybersecurity / Availability / Compliance
+Risk Event	Server failure
+Threat	Malware / Human Error / Hardware Failure
+Vulnerability	No backup
+Risk Cause	ไม่มีระบบ Backup
+Risk Consequence	Productionหยุด
+Existing Condition	สภาพปัจจุบัน
+Potential Impact	ผลกระทบที่อาจเกิดขึ้น
+4. Risk Category
+
+ผมแนะนำให้ทำ Dropdown เช่น
+
+Information Security
+Cybersecurity
+IT Infrastructure
+Network
+Server
+Cloud
+Application
+Database
+Endpoint
+Backup / Recovery
+Business Continuity
+Disaster Recovery
+Data Privacy
+Access Control
+Physical Security
+Supplier / Third Party
+Software / License
+Change Management
+Incident Management
+IT Service Management
+Compliance
+Human Error
+Production System
+OT / PLC / Industrial Control
+Data Integrity
+Availability
+Confidentiality
+Integrity
+
+โดยเฉพาะองค์กร Manufacturing ควรแยก IT / OT / Production System ให้ชัดเจน
+
+5. Risk Assessment
+
+ส่วนนี้ควรมีทั้ง Inherent Risk และ Residual Risk
+
+Inherent Risk
+
+คือความเสี่ยง ก่อนมีมาตรการควบคุม
+
+ควรมี
+
+Field	ตัวอย่าง
+Likelihood	1–5
+Impact	1–5
+Confidentiality Impact	1–5
+Integrity Impact	1–5
+Availability Impact	1–5
+Business Impact	1–5
+Compliance Impact	1–5
+Financial Impact	1–5
+Operational Impact	1–5
+Safety Impact	1–5
+Customer Impact	1–5
+Risk Score	L × I
+Risk Level	Low / Medium / High / Critical
+6. จุดสำคัญสำหรับ IATF 16949
+
+เนื่องจากเป็นโรงงาน Automotive ผมแนะนำให้เพิ่ม Impact เฉพาะด้านนี้
+
+Automotive / Quality Impact
+Field
+Product Quality Impact
+Production Impact
+Customer Impact
+Delivery Impact
+Traceability Impact
+Manufacturing Process Impact
+Quality System Impact
+Special Characteristic Impact
+Product Safety Impact
+Customer Specific Requirement (CSR)
+Automotive Requirement
+Potential Nonconformity
+
+ตัวอย่าง:
+
+ERP Server Down → Production Planning ไม่สามารถทำงาน → Production Delay → Customer Delivery Risk
+
+7. ISO 9001
+
+ควรมีหัวข้อเกี่ยวกับ Quality Management System
+
+Field
+QMS Process
+Quality Objective
+Process Risk
+Product / Service Impact
+Customer Requirement
+Interested Party
+Process Performance
+Nonconformity Potential
+Corrective Action Required
+Continual Improvement
+
+และควรมี
+
+Risk / Opportunity
+
+เพราะ ISO 9001 ใช้แนวคิดเรื่อง Risks and Opportunities
+
+ดังนั้นผมแนะนำให้มี Field:
+
+Risk / Opportunity
+
+8. JAMA / JAPIA
+
+สำหรับ Automotive Information Security ควรเพิ่มหัวข้อที่เกี่ยวข้องกับข้อมูลและ Supply Chain
+
+Field
+Customer Information
+Supplier Information
+Automotive Information
+Confidential Information
+Personal Information
+Design Information
+Drawing
+Specification
+Production Information
+Quality Information
+Business Information
+Information Sharing
+Third Party
+Supplier
+Customer Requirement
+Information Classification
+
+และเพิ่ม
+
+Information Flow
+
+เช่น
+
+Customer → Company → Supplier → Production → Customer
+
+เพื่อดูว่าข้อมูลสำคัญไหลไปที่ไหนบ้าง
+
+9. ISO/IEC 27001
+
+ส่วนนี้ควรออกแบบให้เชื่อมกับแนวคิด ISMS
+
+ควรมี
+
+Field
+Information Asset
+Asset Owner
+Information Owner
+Data Classification
+CIA Requirement
+Threat
+Vulnerability
+Existing Control
+Control Owner
+ISO 27001 Control
+Control Effectiveness
+Residual Risk
+CIA
+
+ควรแยกเป็น 3 ช่อง
+
+Confidentiality
+Integrity
+Availability
+
+เพราะบาง Risk ไม่ได้กระทบทั้ง 3 ด้านเท่ากัน
+
+10. Existing Control
+
+ส่วนนี้สำคัญมากสำหรับ Audit
+
+ควรถามว่า
+
+"ปัจจุบันองค์กรมีอะไรควบคุมความเสี่ยงนี้อยู่แล้ว?"
+
+Fields:
+
+Field
+Existing Control
+Control Type
+Preventive / Detective / Corrective
+Manual / Automated
+Control Owner
+Control Frequency
+Control Evidence
+Control Effectiveness
+Last Test Date
+Evidence Location
+
+ตัวอย่าง:
+
+Risk: Server Failure
+
+Existing Control:
+
+Daily Backup
+
+Evidence:
+
+Backup Report
+
+Control Effectiveness:
+
+Effective
+
+11. Risk Treatment
+
+หลังจากพบ Risk แล้ว ต้องระบุว่าจะจัดการอย่างไร
+
+Risk Treatment Options
+
+Dropdown:
+
+Avoid
+Reduce / Mitigate
+Transfer
+Accept
+
+แล้วมี
+
+Field
+Treatment Strategy
+Treatment Action
+Action Owner
+Target Date
+Priority
+Required Budget
+Required Resource
+Expected Result
+Status
+12. Residual Risk
+
+หลังจากดำเนินการแก้ไขแล้วต้องประเมินใหม่
+
+Residual Risk
+Field
+Residual Likelihood
+Residual Impact
+Residual Risk Score
+Residual Risk Level
+Risk Acceptance
+Risk Acceptance Owner
+Acceptance Date
+
+ตัวอย่าง
+
+Before Control
+
+Likelihood = 4
+Impact = 5
+Risk = 20 Critical
+
+หลังเพิ่ม Backup + DR
+
+After Control
+
+Likelihood = 2
+Impact = 4
+Risk = 8 Medium
+
+13. Risk Acceptance
+
+ควรมีแยกต่างหาก เพราะ Auditor มักถามว่า
+
+"ใครเป็นผู้ยอมรับความเสี่ยง?"
+
+Fields:
+
+Field
+Risk Acceptance Required
+Accepted By
+Acceptance Date
+Acceptance Reason
+Acceptance Expiry Date
+Review Frequency
+14. Compliance Mapping
+
+อันนี้ผมแนะนำให้ทำเป็นส่วนสำคัญที่สุดส่วนหนึ่งของ Excel
+
+ไม่ควรทำ Risk 1 รายการต่อ 1 มาตรฐาน
+
+แต่ให้ Risk เดียว Mapping ได้หลายมาตรฐาน
+
+ตัวอย่าง:
+
+Risk ID	IATF16949	ISO9001	JAMA/JAPIA	ISO27001
+IT-R-001	✓	✓	✓	✓
+IT-R-002	✓			✓
+IT-R-003		✓		✓
+
+และเพิ่ม
+
+Field
+Standard
+Clause / Requirement
+Control Reference
+Applicable / Not Applicable
+Compliance Gap
+Evidence
+15. Incident / Previous Event
+
+Risk Assessment ควรดึงข้อมูล Incident มาประกอบได้
+
+เพิ่ม:
+
+Previous Incident
+Incident ID
+Incident Date
+Incident Frequency
+Historical Occurrence
+Near Miss
+Previous Corrective Action
+
+เพราะถ้าเหตุการณ์เคยเกิดขึ้นแล้ว Likelihood ควรมีข้อมูลสนับสนุน ไม่ใช่ประเมินจากความรู้สึกอย่างเดียว
+
+16. Change Management
+
+สำหรับ IT Risk ควรมีช่องว่า Risk นี้เกิดจากการเปลี่ยนแปลงหรือไม่
+
+Field
+Related Change
+Change ID
+New System
+New Technology
+Infrastructure Change
+Software Change
+Vendor Change
+Process Change
+Migration
+Implementation Date
+
+เช่น
+
+เปลี่ยน ERP → ต้องทำ Risk Assessment ก่อน Go-Live
+
+17. Business Continuity
+
+ควรเพิ่ม
+
+Field
+Business Criticality
+Critical Process
+RTO
+RPO
+Maximum Tolerable Downtime
+Disaster Scenario
+Recovery Strategy
+DR Available
+Backup Available
+Backup Frequency
+DR Test Date
+18. Supplier / Third Party Risk
+
+สำหรับองค์กร Automotive สำคัญมาก
+
+Field
+Supplier
+Vendor
+Third Party
+Service
+Supplier Criticality
+Data Shared
+Access Provided
+Remote Access
+Contract
+SLA
+Security Requirement
+Supplier Assessment
+Supplier Risk
+Exit Plan
+19. Evidence / Audit
+
+เพื่อให้ Excel ใช้เป็น Audit Evidence ได้
+
+ควรมี
+
+Field
+Evidence Required
+Evidence Available
+Evidence Type
+Evidence Reference
+Document ID
+Procedure / WI
+Policy Reference
+Audit Finding
+CAR / NC Reference
+CAPA Reference
+20. Dashboard
+
+สุดท้ายควรทำ Dashboard อัตโนมัติ
+
+แสดงอย่างน้อย:
+
+Risk Summary
+Total Risk
+Critical
+High
+Medium
+Low
+Open
+Closed
+Accepted
+Overdue
+Risk by Category
+
+เช่น
+
+Cybersecurity
+Infrastructure
+Application
+Network
+Data
+Supplier
+Production
+
+Risk by Department
+
+เช่น
+
+IT
+Production
+QA
+HR
+Finance
+Purchasing
+
+Risk Trend
+
+2026 Q1 → Q2 → Q3 → Q4
+
+Top Open Risks
+
+แสดง:
+
+Risk ID / Risk / Owner / Score / Due Date / Status
+
+โครงสร้างที่ผมแนะนำที่สุด
+
+ถ้าจะทำให้ใช้จริงในองค์กร ผมจะออกแบบ Risk Assessment Form เป็น 5 ส่วนใหญ่ ๆ:
+
+01. RISK IDENTIFICATION
+        ↓
+02. RISK ASSESSMENT
+        ↓
+03. EXISTING CONTROL
+        ↓
+04. RISK TREATMENT
+        ↓
+05. RESIDUAL RISK & ACCEPTANCE
+
+และมี Compliance Mapping ครอบอยู่ด้านข้าง
+
+                  IT RISK ASSESSMENT
+                         │
+       ┌─────────────────┼──────────────────┐
+       ↓                 ↓                  ↓
+   IATF 16949         ISO 9001         JAMA/JAPIA
+       │                 │                  │
+       └─────────────────┼──────────────────┘
+                         ↓
+                    ISO 27001
+                         │
+                         ↓
+                  IT RISK REGISTER
+                         │
+             ┌───────────┼───────────┐
+             ↓           ↓           ↓
+          Control      Action      Evidence
+             │           │           │
+             └───────────┼───────────┘
+                         ↓
+                  RESIDUAL RISK
+                         │
+                         ↓
+                  RISK ACCEPTANCE
+สิ่งที่ผมแนะนำเพิ่มเติม
+
+อย่าทำ Excel เป็นแค่ "Likelihood × Impact = Risk Score" เพราะสำหรับการ Audit ของทั้ง 4 กลุ่มมาตรฐาน จะค่อนข้างบางเกินไป
+
+ควรทำให้เห็น Traceability ตั้งแต่:
+
+Risk → Cause → Impact → Existing Control → Standard/Clause → Action → Evidence → Residual Risk → Acceptance
+
+แบบนี้จะทำให้สามารถใช้ชุดข้อมูลเดียวกันในการตอบคำถามของ IATF 16949 / ISO 9001 / JAMA-JAPIA / ISO 27001 ได้ โดยไม่ต้องทำ Risk Assessment ซ้ำ 4 ชุดครับ
+
+
+Project Requirement / System Design Brief ที่สามารถนำไปใช้เป็นโจทย์ให้ Developer ออกแบบระบบต่อได้เลย โดยเน้นให้รองรับ Risk Assessment ของ IATF 16949, ISO 9001, JAMA/JAPIA และ ISO/IEC 27001 และรองรับการขยายในอนาคต
+
+1. Project Requirement
+
+ชื่อโครงการ:
+IT Risk Assessment & Risk Management System
+
+วัตถุประสงค์
+
+พัฒนาระบบสำหรับบันทึก ประเมิน วิเคราะห์ และติดตามความเสี่ยงด้าน IT โดยใช้ฐานข้อมูล Microsoft SQL Server เพื่อรองรับการประเมินความเสี่ยงตามแนวทางของ
+
+IATF 16949
+ISO 9001
+JAMA / JAPIA
+ISO/IEC 27001
+
+ระบบต้องสามารถบันทึก Risk ตั้งแต่การระบุความเสี่ยง สาเหตุ ผลกระทบ การควบคุมที่มีอยู่ การกำหนดแนวทางจัดการความเสี่ยง การติดตาม Action จนถึงการประเมิน Residual Risk และการยอมรับความเสี่ยง
+
+2. Technology Stack
+Component	Technology
+Database	Microsoft SQL Server
+Backend	Node.js
+API	REST API
+Frontend	React / Vue / Angular หรือ Framework ที่เหมาะสม
+Container	Docker
+Container Management	Portainer
+Source Control	GitHub
+Deployment	GitHub → Docker → Portainer
+Authentication	สามารถรองรับ AD / Microsoft Entra ID ในอนาคต
+API Documentation	Swagger / OpenAPI
+Reverse Proxy	Nginx / Traefik
+Time Zone	Asia/Bangkok
+3. Architecture
+
+แนะนำให้วาง Architecture แบบนี้
+
+                         USER
+                          │
+                          ▼
+                    Web Browser
+                          │
+                          ▼
+                ┌──────────────────┐
+                │   Frontend       │
+                │ React / Vue      │
+                └────────┬─────────┘
+                         │ REST API
+                         ▼
+                ┌──────────────────┐
+                │ Backend          │
+                │ Node.js          │
+                │ REST API         │
+                └────────┬─────────┘
+                         │
+                         ▼
+                ┌──────────────────┐
+                │ Microsoft SQL    │
+                │ Server           │
+                └──────────────────┘
+
+
+              GitHub
+                 │
+                 ▼
+          Docker Repository
+                 │
+                 ▼
+              Docker
+                 │
+                 ▼
+            Portainer
+                 │
+        ┌────────┴────────┐
+        ▼                 ▼
+   Frontend            Backend
+   Container           Container
+                           │
+                           ▼
+                       SQL Server
+4. Database Design
+
+ผมแนะนำให้แบ่ง Database เป็น 5 กลุ่ม
+
+MASTER
+ ├─ Standard
+ ├─ StandardClause
+ ├─ RiskCategory
+ ├─ RiskLevel
+ ├─ Department
+ └─ ...
+
+RISK
+ ├─ Risk
+ ├─ RiskAssessment
+ ├─ RiskImpact
+ ├─ RiskCause
+ └─ RiskConsequence
+
+CONTROL
+ ├─ RiskControl
+ ├─ ControlTest
+ └─ ControlEvidence
+
+TREATMENT
+ ├─ RiskTreatment
+ ├─ TreatmentAction
+ └─ RiskAcceptance
+
+AUDIT / SYSTEM
+ ├─ RiskReview
+ ├─ AuditFinding
+ ├─ Attachment
+ └─ User
+5. ตารางหลักที่ควรมี
+5.1 Risk
+
+เก็บข้อมูลหลักของ Risk
+
+Risk
+--------------------------------
+RiskID
+RiskNo
+RiskTitle
+RiskDescription
+DepartmentID
+ProcessID
+RiskCategoryID
+RiskOwnerID
+AssetID
+RiskType
+Status
+AssessmentDate
+ReviewDate
+
+ตัวอย่าง
+
+RiskNo      : IT-R-2026-001
+RiskTitle   : Production Server Failure
+Category    : IT Infrastructure
+Process     : Production
+Owner       : IT Manager
+6. RiskAssessment
+
+เก็บผลการประเมิน
+
+RiskAssessment
+--------------------------------
+RiskAssessmentID
+RiskID
+AssessmentVersion
+Likelihood
+Impact
+ConfidentialityImpact
+IntegrityImpact
+AvailabilityImpact
+BusinessImpact
+FinancialImpact
+OperationalImpact
+QualityImpact
+CustomerImpact
+SafetyImpact
+RiskScore
+RiskLevel
+AssessmentType
+AssessmentDate
+
+รองรับ
+
+Initial Risk
+        ↓
+Control
+        ↓
+Residual Risk
+
+ดังนั้นควรมี
+
+AssessmentType
+
+INHERENT
+RESIDUAL
+7. RiskCause
+
+เก็บสาเหตุของ Risk
+
+RiskCause
+--------------------------------
+RiskCauseID
+RiskID
+CauseType
+CauseDescription
+
+ตัวอย่าง
+
+Hardware Failure
+Human Error
+Cyber Attack
+Software Bug
+Network Failure
+Lack of Backup
+Unauthorized Access
+8. RiskImpact
+
+เก็บผลกระทบ
+
+RiskImpact
+--------------------------------
+RiskImpactID
+RiskID
+ImpactType
+ImpactDescription
+ImpactLevel
+
+รองรับ
+
+Quality
+Production
+Customer
+Financial
+Security
+Compliance
+Safety
+Availability
+Confidentiality
+Integrity
+9. RiskControl
+
+เก็บ Existing Control
+
+RiskControl
+--------------------------------
+RiskControlID
+RiskID
+ControlName
+ControlDescription
+ControlType
+ControlOwner
+Frequency
+ControlEffectiveness
+EvidenceRequired
+Status
+
+เช่น
+
+Control Name:
+Daily Server Backup
+
+Control Type:
+Preventive
+
+Frequency:
+Daily
+
+Effectiveness:
+Effective
+10. RiskTreatment
+
+เก็บแนวทางจัดการ Risk
+
+RiskTreatment
+--------------------------------
+RiskTreatmentID
+RiskID
+TreatmentType
+TreatmentDescription
+OwnerID
+Priority
+TargetDate
+Budget
+Status
+ExpectedResult
+
+Treatment Type:
+
+Avoid
+Reduce
+Transfer
+Accept
+11. TreatmentAction
+
+กรณีหนึ่ง Risk มีหลาย Action
+
+TreatmentAction
+--------------------------------
+ActionID
+RiskTreatmentID
+ActionNo
+ActionDescription
+ActionOwnerID
+StartDate
+DueDate
+CompletedDate
+Status
+Progress
+Result
+
+เช่น
+
+Risk
+ ↓
+Treatment
+ ↓
+ ├── Install Backup Server
+ ├── Configure Backup
+ ├── Configure Monitoring
+ └── Perform DR Test
+12. RiskAcceptance
+
+เก็บการยอมรับ Risk
+
+RiskAcceptance
+--------------------------------
+RiskAcceptanceID
+RiskID
+RiskAssessmentID
+AcceptanceStatus
+AcceptedBy
+AcceptanceDate
+Reason
+ExpiryDate
+13. Standard Mapping
+
+ส่วนนี้ สำคัญมาก สำหรับโจทย์ของคุณ
+
+ไม่ควรเอา Column แบบ
+
+IATF = Yes
+ISO9001 = Yes
+JAMA = No
+ISO27001 = Yes
+
+ไปใส่ใน Risk
+
+เพราะอนาคตจะเพิ่มมาตรฐานอื่นลำบาก
+
+ควรทำแบบ Many-to-Many
+
+Standard
+----------------
+StandardID
+StandardCode
+StandardName
+Version
+Status
+
+เช่น
+
+IATF16949
+ISO9001
+JAMA
+JAPIA
+ISO27001
+
+และ
+
+StandardClause
+----------------
+StandardClauseID
+StandardID
+ClauseNo
+ClauseTitle
+Requirement
+
+จากนั้นสร้าง
+
+RiskStandard
+----------------
+RiskStandardID
+RiskID
+StandardID
+StandardClauseID
+Applicable
+ComplianceGap
+Remark
+
+ทำให้ Risk 1 ตัว Mapping ได้หลายมาตรฐาน
+
+Risk IT-R-001
+      │
+      ├── IATF 16949
+      ├── ISO 9001
+      ├── JAMA
+      ├── JAPIA
+      └── ISO 27001
+14. Asset
+
+สำหรับ IT Risk ควรมี Asset
+
+Asset
+--------------------------------
+AssetID
+AssetCode
+AssetName
+AssetType
+OwnerID
+DepartmentID
+Criticality
+Classification
+Location
+Status
+
+ตัวอย่าง
+
+Server
+PC
+Notebook
+Network
+Firewall
+Switch
+Application
+Database
+Cloud
+PLC
+OT
+File Server
+ERP
+GLPI
+15. Information Classification
+
+รองรับ ISO 27001 / JAMA / JAPIA
+
+InformationAsset
+--------------------------------
+InformationAssetID
+AssetID
+InformationType
+Classification
+OwnerID
+ConfidentialityLevel
+IntegrityLevel
+AvailabilityLevel
+
+Classification เช่น
+
+Public
+Internal
+Confidential
+Restricted
+16. User / Organization
+User
+--------------------------------
+UserID
+EmployeeCode
+Username
+DisplayName
+Email
+DepartmentID
+RoleID
+Status
+
+และ
+
+Department
+Process
+Role
+
+เพื่อรองรับการกำหนด
+
+Risk Owner
+Control Owner
+Action Owner
+Approver
+Assessor
+17. Audit Evidence
+
+ควรมีตาราง Evidence
+
+RiskEvidence
+--------------------------------
+EvidenceID
+RiskID
+EvidenceType
+FileName
+FilePath
+DocumentNo
+Description
+EvidenceDate
+
+เช่น
+
+Backup Report
+Firewall Configuration
+Access Review
+DR Test Report
+Vulnerability Scan
+Training Record
+Procedure
+Work Instruction
+Audit Report
+18. ทุก Table ต้องมี Audit Columns
+
+ตาม Requirement ที่ให้มา ผมแนะนำให้กำหนดเป็น มาตรฐานกลางของ Database
+
+ทุก Table ต้องมี
+
+CreateDate DATETIME NOT NULL
+    CONSTRAINT DF_<Table>_CreateDate
+    DEFAULT GETDATE(),
+
+CreatedBy VARCHAR(100) NOT NULL
+    CONSTRAINT DF_<Table>_CreatedBy
+    DEFAULT 'system',
+
+UpdatedDate DATETIME NOT NULL
+    CONSTRAINT DF_<Table>_UpdatedDate
+    DEFAULT GETDATE(),
+
+UpdatedBy VARCHAR(100) NOT NULL
+    CONSTRAINT DF_<Table>_UpdatedBy
+    DEFAULT 'system',
+
+RowPointer UNIQUEIDENTIFIER NOT NULL
+    CONSTRAINT DF_<Table>_RowPointer
+    DEFAULT NEWID()
+
+และกำหนด
+
+UNIQUE(RowPointer)
+
+ข้อสำคัญ: RowPointer ต้อง Unique ทั้ง Database ตาม Requirement
+
+แต่ใน SQL Server ไม่สามารถสร้าง UNIQUE CONSTRAINT แบบเดียวให้ครอบคลุมทุก Table ได้ ดังนั้นต้องทำให้ แต่ละ Table มี UNIQUE constraint/index ของตัวเอง และใน Backend ควรใช้ RowPointer เป็น Public Identifier
+
+ตัวอย่าง
+
+CREATE UNIQUE INDEX UX_Risk_RowPointer
+ON Risk(RowPointer);
+19. Primary Key
+
+ผมแนะนำให้ใช้
+
+RiskID BIGINT IDENTITY
+
+เป็น Primary Key ภายใน Database
+
+และ
+
+RowPointer UNIQUEIDENTIFIER
+
+เป็น Public Reference
+
+เช่น
+
+RiskID
+125
+
+RowPointer
+550e8400-e29b-41d4-a716-446655440000
+
+เหตุผลคือไม่ควรเปิดเผย Sequential ID ผ่าน API
+
+20. Risk Score
+
+ควรให้ระบบคำนวณ ไม่ให้ User กรอกเอง
+
+ตัวอย่าง
+
+Likelihood × Impact = Risk Score
+
+เช่น
+
+Likelihood = 4
+Impact     = 5
+
+Risk Score = 20
+
+แล้ว Mapping
+
+1–4     Low
+5–9     Medium
+10–16   High
+17–25   Critical
+
+แต่ควรเก็บเกณฑ์ไว้ใน Database ไม่ Hard Code ใน Node.js
+
+21. Risk Criteria
+RiskCriteria
+--------------------------------
+RiskCriteriaID
+CriteriaType
+MinScore
+MaxScore
+RiskLevel
+Description
+
+และสามารถมี
+
+LikelihoodCriteria
+ImpactCriteria
+RiskMatrix
+
+เพื่อให้ Admin เปลี่ยนเกณฑ์ได้โดยไม่ต้องแก้ Code
+
+22. Frontend
+
+หน้าเว็บควรมีอย่างน้อย
+
+Dashboard
+┌────────────────────────────────────────────┐
+│ IT RISK MANAGEMENT                         │
+├─────────┬─────────┬─────────┬──────────────┤
+│Critical │  High   │ Medium  │     Low      │
+│   5     │   12    │   25    │      18      │
+└─────────┴─────────┴─────────┴──────────────┘
+
+Risk by Category
+Risk by Department
+Risk by Standard
+Risk Trend
+Overdue Action
+Risk Register
+Risk No
+Risk Title
+Category
+Owner
+Inherent Risk
+Residual Risk
+Status
+Due Date
+Risk Form
+
+แบ่งเป็น Tab
+
+1. General Information
+2. Risk Identification
+3. Cause / Consequence
+4. Risk Assessment
+5. Existing Control
+6. Standard Mapping
+7. Treatment
+8. Action
+9. Residual Risk
+10. Risk Acceptance
+11. Evidence
+12. Review History
+23. Backend Node.js
+
+แนะนำโครงสร้าง
+
+backend/
+│
+├── src/
+│   ├── controllers/
+│   ├── services/
+│   ├── repositories/
+│   ├── routes/
+│   ├── middleware/
+│   ├── validators/
+│   ├── models/
+│   ├── config/
+│   └── app.js
+│
+├── migrations/
+├── seeders/
+├── tests/
+├── Dockerfile
+├── package.json
+└── .env.example
+
+API ตัวอย่าง
+
+GET    /api/risks
+GET    /api/risks/:id
+POST   /api/risks
+PUT    /api/risks/:id
+DELETE /api/risks/:id
+
+POST   /api/risks/:id/assessment
+POST   /api/risks/:id/controls
+POST   /api/risks/:id/treatments
+POST   /api/risks/:id/actions
+POST   /api/risks/:id/evidence
+
+GET    /api/dashboard
+GET    /api/standards
+GET    /api/risk-categories
+GET    /api/departments
+24. Docker
+
+ควรแยก Container
+
+Docker
+│
+├── risk-frontend
+│
+├── risk-backend
+│
+└── risk-network
+
+SQL Server สามารถใช้ Database Server ที่มีอยู่แล้ว หรือแยก Container ตาม Infrastructure Policy
+
+ถ้าใช้ SQL Server Container:
+
+┌───────────────────────────────┐
+│ Docker Host                   │
+│                               │
+│ ┌────────────┐ ┌────────────┐ │
+│ │ Frontend   │ │ Backend    │ │
+│ │ Container  │ │ Node.js    │ │
+│ └────────────┘ └─────┬──────┘ │
+│                      │        │
+│                ┌─────▼──────┐ │
+│                │ SQL Server │ │
+│                │ Container  │ │
+│                └────────────┘ │
+└───────────────────────────────┘
+25. GitHub
+
+Repository แนะนำ
+
+it-risk-management/
+│
+├── frontend/
+├── backend/
+├── database/
+│   ├── schema/
+│   ├── migration/
+│   └── seed/
+│
+├── docker/
+├── docs/
+│
+├── docker-compose.yml
+├── README.md
+└── .gitignore
+
+Database Script:
+
+database/
+│
+├── 001_create_database.sql
+├── 002_create_master_tables.sql
+├── 003_create_risk_tables.sql
+├── 004_create_control_tables.sql
+├── 005_create_treatment_tables.sql
+├── 006_create_audit_tables.sql
+└── 007_seed_master_data.sql
+26. Portainer Deployment
+
+Flow ที่ต้องการ
+
+Developer
+    │
+    ▼
+GitHub
+    │
+    ▼
+Docker Build
+    │
+    ▼
+Docker Image
+    │
+    ▼
+Portainer
+    │
+    ▼
+Deploy Stack
+    │
+    ├── Frontend
+    └── Backend
+             │
+             ▼
+         MS SQL Server
+
+สามารถใช้
+
+docker-compose.yml
+
+สำหรับ Deployment
+
+ตัวอย่าง Concept:
+
+services:
+
+  frontend:
+    image: your-github-registry/risk-frontend:latest
+
+  backend:
+    image: your-github-registry/risk-backend:latest
+    environment:
+      DB_HOST: ...
+      DB_NAME: ...
+      DB_USER: ...
+      DB_PASSWORD: ...
+
+Password และ Secret ห้าม Commit เข้า GitHub
+
+ใช้
+
+.env
+Docker Secrets
+Portainer Environment Variables
+
+แทน
+
+27. สิ่งที่ระบบควรทำได้ใน Version 1
+
+ผมแนะนำกำหนด Scope V1 ไว้แบบนี้
+
+Core
+Create Risk
+Edit Risk
+Risk Register
+Risk Assessment
+Risk Matrix
+Inherent Risk
+Existing Control
+Standard Mapping
+Risk Treatment
+Action Tracking
+Residual Risk
+Risk Acceptance
+Evidence
+Risk Review
+Master
+Department
+Process
+Asset
+Risk Category
+Risk Type
+Standard
+Standard Clause
+Risk Criteria
+User
+Role
+Dashboard
+Risk Summary
+Risk by Category
+Risk by Department
+Risk by Standard
+Risk by Risk Level
+Open Action
+Overdue Action
+Risk Trend
+28. จุดที่ควรออกแบบเผื่อ V2
+
+ไม่จำเป็นต้องทำตั้งแต่แรก แต่ Database ควรเผื่อไว้
+
+AD / Entra ID Login
+        ↓
+Approval Workflow
+        ↓
+Email Notification
+        ↓
+GLPI Integration
+        ↓
+Power Automate
+        ↓
+SIEM / Security Incident
+        ↓
+Vulnerability Management
+        ↓
+Asset Management
+
+โดยเฉพาะในสภาพแวดล้อม IT ของคุณ สามารถต่อยอดให้ Risk เชื่อมกับ Asset / Incident / Change / GLPI ได้ภายหลัง
+
+สรุปโจทย์ฉบับพร้อมส่งให้ Developer
+
+พัฒนาระบบ IT Risk Assessment & Risk Management System
+
+ระบบมีวัตถุประสงค์เพื่อรองรับการบันทึก ประเมิน วิเคราะห์ จัดการ และติดตามความเสี่ยงด้าน IT โดยครอบคลุมแนวทางและข้อกำหนดที่เกี่ยวข้องกับ IATF 16949, ISO 9001, JAMA/JAPIA และ ISO/IEC 27001
+
+Database: Microsoft SQL Server
+Backend: Node.js REST API
+Frontend: Framework ใดก็ได้ เช่น React / Vue / Angular
+Source Control: GitHub
+Container: Docker
+Container Management: Portainer
+
+ระบบต้องรองรับ Risk Register, Risk Assessment, Risk Cause, Risk Impact, Existing Control, Risk Treatment, Action Tracking, Residual Risk, Risk Acceptance, Evidence และ Compliance Mapping
+
+Risk หนึ่งรายการต้องสามารถ Mapping กับหลาย Standard และหลาย Clause ได้ เช่น IATF 16949, ISO 9001, JAMA/JAPIA และ ISO 27001
+
+ระบบต้องรองรับทั้ง Inherent Risk และ Residual Risk และสามารถกำหนด Risk Criteria / Risk Matrix ผ่าน Master Data โดยไม่ Hard Code ค่าไว้ใน Application
+
+Database Standard: ทุก Table ต้องมี Audit Fields ดังนี้
+
+CreateDate DEFAULT GETDATE()
+CreatedBy DEFAULT 'system'
+UpdatedDate DEFAULT GETDATE()
+UpdatedBy DEFAULT 'system'
+RowPointer UNIQUEIDENTIFIER DEFAULT NEWID()
+
+RowPointer ต้องไม่ซ้ำกันภายในแต่ละ Table และต้องมี Unique Index/Constraint
+
+Primary Key ให้ใช้ Identity Key สำหรับการทำงานภายใน Database และใช้ RowPointer เป็น Public Identifier สำหรับ API
+
+Source Code ทั้งหมดต้องจัดเก็บบน GitHub และต้องสามารถ Clone/Deploy ได้โดยไม่ต้องแก้ไข Source Code โดยตรง
+
+Application ต้องสามารถ Build เป็น Docker Image และ Deploy ผ่าน Portainer ได้
+
+ต้องแยก Frontend และ Backend เป็น Container และ Backend สามารถเชื่อมต่อ Microsoft SQL Server ผ่าน Environment Variables / Secrets
+
+ห้ามเก็บ Database Password, API Key หรือ Secret ที่เป็นความลับไว้ใน GitHub
+
+ต้องจัดเตรียม README.md, Database Schema, Migration/SQL Script, Seed Data, .env.example, Dockerfile และ docker-compose.yml สำหรับการติดตั้งและ Deployment
+
+ผลลัพธ์ที่ต้องการ: ระบบ Web Application สำหรับบริหาร IT Risk ที่สามารถใช้เป็นข้อมูลสนับสนุนการตรวจประเมินและติดตามความเสี่ยงตามมาตรฐานที่เกี่ยวข้อง โดยสามารถตรวจสอบ Traceability ได้ตั้งแต่ Risk → Cause → Impact → Control → Standard/Clause → Treatment → Action → Evidence → Residual Risk → Risk Acceptance
+
+ถ้าจะทำต่อในขั้น Database Design จริง ผมแนะนำให้ขั้นถัดไปจัดทำเป็น ER Diagram + รายชื่อ Table ทั้งหมด + Column/Datatype + PK/FK + Index + SQL Server CREATE TABLE Script ก่อนเขียน Node.js เพราะจะทำให้โครงสร้างระบบนิ่งและลดปัญหาแก้ Database ภายหลังครับ

@@ -1,0 +1,21 @@
+{
+  "name": "risk-assessment-backend",
+  "version": "1.0.0",
+  "description": "IT Risk Assessment & Management System Backend API",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js",
+    "init-db": "node scripts/init_db.js"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.13.3",
+    "@azure/msal-node": "^6.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "mssql": "^11.0.1"
+  }
+}

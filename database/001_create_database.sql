@@ -1,0 +1,5 @@
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'IT_Apps')
+BEGIN
+    CREATE DATABASE IT_Apps;
+END
+GO
