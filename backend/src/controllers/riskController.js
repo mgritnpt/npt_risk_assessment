@@ -531,14 +531,25 @@ const updateRisk = async (req, res) => {
         .input('RiskID', sql.BigInt, id)
         .input('Likelihood', sql.Int, l)
         .input('Impact', sql.Int, i)
+        .input('ConfidentialityImpact', sql.Int, residualAssessment.ConfidentialityImpact || l)
+        .input('IntegrityImpact', sql.Int, residualAssessment.IntegrityImpact || l)
+        .input('AvailabilityImpact', sql.Int, residualAssessment.AvailabilityImpact || i)
+        .input('QualityImpact', sql.Int, residualAssessment.QualityImpact || i)
+        .input('FinancialImpact', sql.Int, residualAssessment.FinancialImpact || i)
         .input('RiskScore', sql.Int, score)
         .input('RiskLevel', sql.NVarChar, level);
 
       await resReq.query(`
         IF EXISTS (SELECT 1 FROM dbo.RiskAssessment WHERE RiskID = @RiskID AND AssessmentType = 'RESIDUAL')
-          UPDATE dbo.RiskAssessment SET Likelihood = @Likelihood, Impact = @Impact, RiskScore = @RiskScore, RiskLevel = @RiskLevel, UpdatedDate = GETDATE() WHERE RiskID = @RiskID AND AssessmentType = 'RESIDUAL'
+          UPDATE dbo.RiskAssessment SET
+            Likelihood = @Likelihood, Impact = @Impact,
+            ConfidentialityImpact = @ConfidentialityImpact, IntegrityImpact = @IntegrityImpact,
+            AvailabilityImpact = @AvailabilityImpact, QualityImpact = @QualityImpact, FinancialImpact = @FinancialImpact,
+            RiskScore = @RiskScore, RiskLevel = @RiskLevel, UpdatedDate = GETDATE()
+          WHERE RiskID = @RiskID AND AssessmentType = 'RESIDUAL'
         ELSE
-          INSERT INTO dbo.RiskAssessment (RiskID, AssessmentType, Likelihood, Impact, RiskScore, RiskLevel) VALUES (@RiskID, 'RESIDUAL', @Likelihood, @Impact, @RiskScore, @RiskLevel)
+          INSERT INTO dbo.RiskAssessment (RiskID, AssessmentType, Likelihood, Impact, ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact, RiskScore, RiskLevel)
+          VALUES (@RiskID, 'RESIDUAL', @Likelihood, @Impact, @ConfidentialityImpact, @IntegrityImpact, @AvailabilityImpact, @QualityImpact, @FinancialImpact, @RiskScore, @RiskLevel)
       `);
     }
 
@@ -570,14 +581,23 @@ const updateRisk = async (req, res) => {
     // 5. Update Standards Mapped (Delete & Re-insert)
     await new sql.Request(transaction).input('RiskID', sql.BigInt, id).query(`DELETE FROM dbo.RiskStandardMapping WHERE RiskID = @RiskID`);
     for (const std of standards) {
-      const stdReq = new sql.Request(transaction);
-      stdReq
-        .input('RiskID', sql.BigInt, id)
-        .input('StandardID', sql.BigInt, std.StandardID);
+      if (std.StandardID) {
+        const stdReq = new sql.Request(transaction);
+        stdReq
+          .input('RiskID', sql.BigInt, id)
+          .input('StandardID', sql.BigInt, std.StandardID)
+          .input('ClauseID', sql.BigInt, std.ClauseID || null)
+          .input('ControlReference', sql.NVarChar, std.ControlReference || '')
+          .input('ComplianceGap', sql.NVarChar, std.ComplianceGap || '');
 
-      await stdReq.query(`
-        INSERT INTO dbo.RiskStandardMapping (RiskID, StandardID) VALUES (@RiskID, @StandardID)
-      `);
+        await stdReq.query(`
+          INSERT INTO dbo.RiskStandardMapping (
+            RiskID, StandardID, ClauseID, ControlReference, ComplianceGap
+          ) VALUES (
+            @RiskID, @StandardID, @ClauseID, @ControlReference, @ComplianceGap
+          )
+        `);
+      }
     }
 
     // 6. Update Treatment Actions (Delete & Re-insert)
