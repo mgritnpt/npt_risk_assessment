@@ -74,4 +74,32 @@ async function autoInitDatabase() {
   }
 }
 
-module.exports = { autoInitDatabase };
+async function resetDatabaseToDefault() {
+  const pool = await connectDB();
+  const sqlDir = path.join(__dirname, '../../../database');
+  const createTablesSql = fs.readFileSync(path.join(sqlDir, '002_create_tables.sql'), 'utf8');
+  const seedDataSql = fs.readFileSync(path.join(sqlDir, '003_seed_data.sql'), 'utf8');
+
+  const runSqlBatches = async (sqlScript, scriptName) => {
+    const batches = sqlScript.split(/^\s*GO\s*$/im);
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      const cleaned = batch.replace(/^\s*USE\s+[^\s;]+;?/im, '').trim();
+      if (cleaned) {
+        try {
+          await pool.request().query(cleaned);
+        } catch (err) {
+          console.warn(`⚠️ [${scriptName}] Batch ${i + 1} warning: ${err.message}`);
+        }
+      }
+    }
+  };
+
+  console.log('🔄 Resetting database tables, compatibility views, and seed data to factory defaults...');
+  await runSqlBatches(createTablesSql, '002_create_tables.sql');
+  await runSqlBatches(seedDataSql, '003_seed_data.sql');
+  console.log('✅ Database reset to factory default completed successfully!');
+  return { message: 'Database reset to factory default completed successfully' };
+}
+
+module.exports = { autoInitDatabase, resetDatabaseToDefault };

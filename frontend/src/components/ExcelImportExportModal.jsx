@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Download, Upload, FileSpreadsheet, X, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
-import { exportExcelData, downloadExcelTemplate, importExcelData } from '../services/api';
+import { Download, Upload, FileSpreadsheet, X, CheckCircle, AlertCircle, RefreshCw, RotateCcw } from 'lucide-react';
+import { exportExcelData, downloadExcelTemplate, importExcelData, resetDatabaseToDefaultApi } from '../services/api';
 
 export default function ExcelImportExportModal({ isOpen, onClose, onImportSuccess }) {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState(null);
 
@@ -42,6 +43,26 @@ export default function ExcelImportExportModal({ isOpen, onClose, onImportSucces
     }
   };
 
+  const handleResetDatabase = async () => {
+    if (window.confirm('⚠️ คำเตือน: คุณต้องการรีเซ็ตฐานข้อมูลเป็นค่าเริ่มต้นโรงงานใช่หรือไม่?\n\nข้อมูล Master Data และ Risk Register ที่เคยเพิ่ม/อัปโหลดทั้งหมดจะถูกเคลียร์และแทนที่ด้วยข้อมูลเริ่มต้น')) {
+      setResetting(true);
+      setError(null);
+      setSummary(null);
+      try {
+        await resetDatabaseToDefaultApi();
+        alert('✅ คืนค่าเริ่มต้นระบบสำเร็จแล้ว!');
+        if (onImportSuccess) {
+          onImportSuccess();
+        }
+        onClose();
+      } catch (err) {
+        setError(err.response?.data?.message || err.message || 'เกิดข้อผิดพลาดในการรีเซ็ตฐานข้อมูล');
+      } finally {
+        setResetting(false);
+      }
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 relative border border-slate-200">
@@ -53,8 +74,8 @@ export default function ExcelImportExportModal({ isOpen, onClose, onImportSucces
               <FileSpreadsheet className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-800">Excel Import & Export Data</h2>
-              <p className="text-xs text-slate-500">จัดการข้อมูล Master Data และ Risk Register ผ่าน Excel</p>
+              <h2 className="text-xl font-bold text-slate-800">Excel Import, Export & Reset Data</h2>
+              <p className="text-xs text-slate-500">จัดการข้อมูล Master Data และ Risk Register ผ่าน Excel หรือรีเซ็ตคืนค่าเริ่มต้น</p>
             </div>
           </div>
           <button
@@ -154,33 +175,55 @@ export default function ExcelImportExportModal({ isOpen, onClose, onImportSucces
           )}
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-3 border-t border-slate-200">
+          <div className="flex items-center justify-between pt-3 border-t border-slate-200">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors"
+              onClick={handleResetDatabase}
+              disabled={resetting || loading}
+              className="px-3.5 py-2 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-medium text-xs rounded-md transition-colors flex items-center space-x-1.5"
+              title="ล้างข้อมูลและตั้งต้นระบบใหม่"
             >
-              ปิดหน้าต่าง
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !file}
-              className={`px-5 py-2 text-sm font-medium text-white rounded-md shadow-sm transition-colors flex items-center space-x-2 ${
-                loading || !file ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'
-              }`}
-            >
-              {loading ? (
+              {resetting ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>กำลังนำเข้าข้อมูล...</span>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                  <span>กำลังคืนค่า...</span>
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4" />
-                  <span>เริ่มการนำเข้า Excel</span>
+                  <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Mode Reset (คืนค่าเริ่มต้น)</span>
                 </>
               )}
             </button>
+
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors"
+              >
+                ปิดหน้าต่าง
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !file || resetting}
+                className={`px-5 py-2 text-sm font-medium text-white rounded-md shadow-sm transition-colors flex items-center space-x-2 ${
+                  loading || !file || resetting ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>กำลังนำเข้าข้อมูล...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    <span>เริ่มการนำเข้า Excel</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
 

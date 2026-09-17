@@ -259,4 +259,9 @@ export const importExcelData = async (file) => {
   });
 };
 
+export const resetDatabaseToDefaultApi = async () => {
+  const response = await api.post('/master/reset-default');
+  return response.data;
+};
+
 export default api;

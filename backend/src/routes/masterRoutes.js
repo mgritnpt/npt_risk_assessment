@@ -59,9 +59,10 @@ router.delete('/clauses/:id', masterController.deleteStandardClause);
 // Audit Logs
 router.get('/audit-logs', masterController.getAuditLogs);
 
-// Excel Import / Export / Template
+// Excel Import / Export / Template / Reset
 router.get('/excel-export', masterController.exportExcelData);
 router.post('/excel-import', masterController.importExcelData);
 router.get('/excel-template', masterController.downloadExcelTemplate);
+router.post('/reset-default', masterController.resetDatabaseHandler);
 
 module.exports = router;

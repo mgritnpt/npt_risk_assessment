@@ -1,4 +1,5 @@
 const { connectDB, sql } = require('../config/db');
+const { resetDatabaseToDefault } = require('../config/initDb');
 const XLSX = require('xlsx');
 const path = require('path');
 const fs = require('fs');
@@ -964,6 +965,16 @@ const downloadExcelTemplate = async (req, res) => {
   }
 };
 
+const resetDatabaseHandler = async (req, res) => {
+  try {
+    const result = await resetDatabaseToDefault();
+    res.json({ message: 'Database reset to factory default settings successfully!', details: result });
+  } catch (error) {
+    console.error('Reset Error:', error);
+    res.status(500).json({ message: 'Error resetting database', error: error.message });
+  }
+};
+
 module.exports = {
   getLikelihoodCriteria,
   createLikelihoodCriteria,
@@ -1009,4 +1020,5 @@ module.exports = {
   exportExcelData,
   importExcelData,
   downloadExcelTemplate,
+  resetDatabaseHandler,
 };
