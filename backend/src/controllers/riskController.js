@@ -543,7 +543,7 @@ const updateRisk = async (req, res) => {
             LikelihoodScore = @Likelihood, ImpactScore = @Impact,
             ConfidentialityImpact = @ConfidentialityImpact, IntegrityImpact = @IntegrityImpact,
             AvailabilityImpact = @AvailabilityImpact, QualityImpact = @QualityImpact, FinancialImpact = @FinancialImpact,
-            RiskScore = @RiskScore, RiskLevel = @RiskLevel, UpdatedDate = GETDATE()
+            RiskLevel = @RiskLevel, UpdatedDate = GETDATE()
           WHERE RiskID = @RiskID AND AssessmentType = 'INHERENT'
         ELSE
           INSERT INTO dbo.RiskAssessment (RiskID, AssessmentType, Likelihood, Impact, ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact, RiskScore, RiskLevel)
@@ -577,7 +577,7 @@ const updateRisk = async (req, res) => {
             LikelihoodScore = @Likelihood, ImpactScore = @Impact,
             ConfidentialityImpact = @ConfidentialityImpact, IntegrityImpact = @IntegrityImpact,
             AvailabilityImpact = @AvailabilityImpact, QualityImpact = @QualityImpact, FinancialImpact = @FinancialImpact,
-            RiskScore = @RiskScore, RiskLevel = @RiskLevel, UpdatedDate = GETDATE()
+            RiskLevel = @RiskLevel, UpdatedDate = GETDATE()
           WHERE RiskID = @RiskID AND AssessmentType = 'RESIDUAL'
         ELSE
           INSERT INTO dbo.RiskAssessment (RiskID, AssessmentType, Likelihood, Impact, ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact, RiskScore, RiskLevel)

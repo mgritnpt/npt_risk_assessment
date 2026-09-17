@@ -1744,7 +1744,6 @@ BEGIN
         a.AvailabilityImpact = ISNULL(i.AvailabilityImpact, a.AvailabilityImpact),
         a.QualityImpact = ISNULL(i.QualityImpact, a.QualityImpact),
         a.FinancialImpact = ISNULL(i.FinancialImpact, a.FinancialImpact),
-        a.RiskScore = ISNULL(i.RiskScore, a.RiskScore),
         a.RiskLevel = ISNULL(i.RiskLevel, a.RiskLevel),
         a.UpdatedDate = GETDATE()
     FROM dbo.Risk_Assessment a
