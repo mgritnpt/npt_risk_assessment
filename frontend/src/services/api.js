@@ -48,6 +48,11 @@ export const createMasterStandard = async (data) => {
   return response.data;
 };
 
+export const updateMasterStandard = async (id, data) => {
+  const response = await api.put(`/master/standards/${id}`, data);
+  return response.data;
+};
+
 export const deleteMasterStandard = async (id) => {
   const response = await api.delete(`/master/standards/${id}`);
   return response.data;
@@ -60,6 +65,11 @@ export const getMasterClauses = async () => {
 
 export const createMasterClause = async (data) => {
   const response = await api.post('/master/clauses', data);
+  return response.data;
+};
+
+export const updateMasterClause = async (id, data) => {
+  const response = await api.put(`/master/clauses/${id}`, data);
   return response.data;
 };
 
@@ -108,6 +118,11 @@ export const createMasterCategory = async (data) => {
   return response.data;
 };
 
+export const updateMasterCategory = async (id, data) => {
+  const response = await api.put(`/master/categories/${id}`, data);
+  return response.data;
+};
+
 export const deleteMasterCategory = async (id) => {
   const response = await api.delete(`/master/categories/${id}`);
   return response.data;
@@ -120,6 +135,11 @@ export const getMasterDepartments = async () => {
 
 export const createMasterDepartment = async (data) => {
   const response = await api.post('/master/departments', data);
+  return response.data;
+};
+
+export const updateMasterDepartment = async (id, data) => {
+  const response = await api.put(`/master/departments/${id}`, data);
   return response.data;
 };
 
@@ -138,6 +158,11 @@ export const createMasterProcess = async (data) => {
   return response.data;
 };
 
+export const updateMasterProcess = async (id, data) => {
+  const response = await api.put(`/master/processes/${id}`, data);
+  return response.data;
+};
+
 export const deleteMasterProcess = async (id) => {
   const response = await api.delete(`/master/processes/${id}`);
   return response.data;
@@ -150,6 +175,11 @@ export const getMasterAssets = async () => {
 
 export const createMasterAsset = async (data) => {
   const response = await api.post('/master/assets', data);
+  return response.data;
+};
+
+export const updateMasterAsset = async (id, data) => {
+  const response = await api.put(`/master/assets/${id}`, data);
   return response.data;
 };
 
@@ -168,6 +198,11 @@ export const createMasterLocation = async (data) => {
   return response.data;
 };
 
+export const updateMasterLocation = async (id, data) => {
+  const response = await api.put(`/master/locations/${id}`, data);
+  return response.data;
+};
+
 export const deleteMasterLocation = async (id) => {
   const response = await api.delete(`/master/locations/${id}`);
   return response.data;
@@ -180,6 +215,11 @@ export const getMasterBUs = async () => {
 
 export const createMasterBU = async (data) => {
   const response = await api.post('/master/bus', data);
+  return response.data;
+};
+
+export const updateMasterBU = async (id, data) => {
+  const response = await api.put(`/master/bus/${id}`, data);
   return response.data;
 };
 

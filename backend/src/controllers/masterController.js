@@ -5,7 +5,7 @@ const getLikelihoodCriteria = async (req, res) => {
   try {
     const pool = await connectDB();
     const result = await pool.request().query(`
-      SELECT * FROM dbo.Master_LikelihoodCriteria WHERE IsActive = 1 ORDER BY LikelihoodScore ASC
+      SELECT LikelihoodCriteriaID AS LikelihoodID, * FROM dbo.Master_LikelihoodCriteria WHERE IsActive = 1 ORDER BY LikelihoodScore ASC
     `);
     res.json(result.recordset);
   } catch (error) {
@@ -49,7 +49,7 @@ const updateLikelihoodCriteria = async (req, res) => {
           LevelName = @LevelName, LevelNameTH = @LevelNameTH,
           Definition = @Definition, FrequencyDescription = @FrequencyDescription,
           UpdatedDate = GETDATE()
-        WHERE LikelihoodID = @id
+        WHERE LikelihoodCriteriaID = @id
       `);
     res.json({ message: 'Likelihood criteria updated successfully' });
   } catch (error) {
@@ -61,7 +61,7 @@ const deleteLikelihoodCriteria = async (req, res) => {
   try {
     const { id } = req.params;
     const pool = await connectDB();
-    await pool.request().input('id', sql.BigInt, id).query(`UPDATE dbo.Master_LikelihoodCriteria SET IsActive = 0 WHERE LikelihoodID = @id`);
+    await pool.request().input('id', sql.BigInt, id).query(`UPDATE dbo.Master_LikelihoodCriteria SET IsActive = 0 WHERE LikelihoodCriteriaID = @id`);
     res.json({ message: 'Likelihood criteria deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting likelihood criteria', error: error.message });
@@ -120,7 +120,7 @@ const updateImpactCriteria = async (req, res) => {
           LevelName = @LevelName, LevelNameTH = @LevelNameTH,
           Definition = @Definition, FinancialThreshold = @FinancialThreshold, OperationalImpact = @OperationalImpact,
           UpdatedDate = GETDATE()
-        WHERE ImpactID = @id
+        WHERE ImpactCriteriaID = @id
       `);
     res.json({ message: 'Impact criteria updated successfully' });
   } catch (error) {
@@ -132,7 +132,7 @@ const deleteImpactCriteria = async (req, res) => {
   try {
     const { id } = req.params;
     const pool = await connectDB();
-    await pool.request().input('id', sql.BigInt, id).query(`UPDATE dbo.Master_ImpactCriteria SET IsActive = 0 WHERE ImpactID = @id`);
+    await pool.request().input('id', sql.BigInt, id).query(`UPDATE dbo.Master_ImpactCriteria SET IsActive = 0 WHERE ImpactCriteriaID = @id`);
     res.json({ message: 'Impact criteria deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting impact criteria', error: error.message });
@@ -477,6 +477,114 @@ const deleteStandardClause = async (req, res) => {
   }
 };
 
+const updateProcess = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ProcessCode, ProcessName, DepartmentID, Description } = req.body;
+    const pool = await connectDB();
+    await pool.request()
+      .input('id', sql.BigInt, id)
+      .input('ProcessCode', sql.NVarChar, ProcessCode)
+      .input('ProcessName', sql.NVarChar, ProcessName)
+      .input('DepartmentID', sql.BigInt, DepartmentID || null)
+      .input('Description', sql.NVarChar, Description || '')
+      .query(`UPDATE dbo.Master_Process SET ProcessCode = @ProcessCode, ProcessName = @ProcessName, DepartmentID = @DepartmentID, Description = @Description, UpdatedDate = GETDATE() WHERE ProcessID = @id`);
+    res.json({ message: 'Process updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating process', error: error.message });
+  }
+};
+
+const updateAsset = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { AssetCode, AssetName, AssetType, OwnerName, Criticality, Category, Description } = req.body;
+    const pool = await connectDB();
+    await pool.request()
+      .input('id', sql.BigInt, id)
+      .input('AssetCode', sql.NVarChar, AssetCode)
+      .input('AssetName', sql.NVarChar, AssetName)
+      .input('AssetType', sql.NVarChar, AssetType || '')
+      .input('OwnerName', sql.NVarChar, OwnerName || '')
+      .input('Criticality', sql.NVarChar, Criticality || 'High')
+      .input('Category', sql.NVarChar, Category || '')
+      .input('Description', sql.NVarChar, Description || '')
+      .query(`UPDATE dbo.Master_Asset SET AssetCode = @AssetCode, AssetName = @AssetName, AssetType = @AssetType, OwnerName = @OwnerName, Criticality = @Criticality, Category = @Category, Description = @Description, UpdatedDate = GETDATE() WHERE AssetID = @id`);
+    res.json({ message: 'Asset updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating asset', error: error.message });
+  }
+};
+
+const updateLocation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { LocationCode, LocationName, Description } = req.body;
+    const pool = await connectDB();
+    await pool.request()
+      .input('id', sql.BigInt, id)
+      .input('LocationCode', sql.NVarChar, LocationCode)
+      .input('LocationName', sql.NVarChar, LocationName)
+      .input('Description', sql.NVarChar, Description || '')
+      .query(`UPDATE dbo.Master_Location SET LocationCode = @LocationCode, LocationName = @LocationName, Description = @Description, UpdatedDate = GETDATE() WHERE LocationID = @id`);
+    res.json({ message: 'Location updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating location', error: error.message });
+  }
+};
+
+const updateBusinessUnit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { BUCode, BUName, Description } = req.body;
+    const pool = await connectDB();
+    await pool.request()
+      .input('id', sql.BigInt, id)
+      .input('BUCode', sql.NVarChar, BUCode)
+      .input('BUName', sql.NVarChar, BUName)
+      .input('Description', sql.NVarChar, Description || '')
+      .query(`UPDATE dbo.Master_BusinessUnit SET BUCode = @BUCode, BUName = @BUName, Description = @Description, UpdatedDate = GETDATE() WHERE BUID = @id`);
+    res.json({ message: 'Business unit updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating business unit', error: error.message });
+  }
+};
+
+const updateStandard = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { StandardCode, StandardName, Description } = req.body;
+    const pool = await connectDB();
+    await pool.request()
+      .input('id', sql.BigInt, id)
+      .input('StandardCode', sql.NVarChar, StandardCode)
+      .input('StandardName', sql.NVarChar, StandardName)
+      .input('Description', sql.NVarChar, Description || '')
+      .query(`UPDATE dbo.Master_Standard SET StandardCode = @StandardCode, StandardName = @StandardName, Description = @Description, UpdatedDate = GETDATE() WHERE StandardID = @id`);
+    res.json({ message: 'Standard updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating standard', error: error.message });
+  }
+};
+
+const updateStandardClause = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { StandardID, ClauseNo, ClauseTitle, Description } = req.body;
+    const pool = await connectDB();
+    await pool.request()
+      .input('id', sql.BigInt, id)
+      .input('StandardID', sql.BigInt, StandardID)
+      .input('ClauseNo', sql.NVarChar, ClauseNo)
+      .input('ClauseTitle', sql.NVarChar, ClauseTitle)
+      .input('Description', sql.NVarChar, Description || '')
+      .query(`UPDATE dbo.Master_StandardClause SET StandardID = @StandardID, ClauseNo = @ClauseNo, ClauseTitle = @ClauseTitle, Description = @Description, UpdatedDate = GETDATE() WHERE ClauseID = @id`);
+    res.json({ message: 'Clause updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating clause', error: error.message });
+  }
+};
+
 // --- AUDIT LOGS ---
 const getAuditLogs = async (req, res) => {
   try {
@@ -507,21 +615,27 @@ module.exports = {
   deleteDepartment,
   getProcesses,
   createProcess,
+  updateProcess,
   deleteProcess,
   getAssets,
   createAsset,
+  updateAsset,
   deleteAsset,
   getLocations,
   createLocation,
+  updateLocation,
   deleteLocation,
   getBusinessUnits,
   createBusinessUnit,
+  updateBusinessUnit,
   deleteBusinessUnit,
   getStandards,
   createStandard,
+  updateStandard,
   deleteStandard,
   getStandardClauses,
   createStandardClause,
+  updateStandardClause,
   deleteStandardClause,
   getAuditLogs,
 };

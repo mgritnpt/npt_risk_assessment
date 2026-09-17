@@ -27,27 +27,33 @@ router.delete('/departments/:id', masterController.deleteDepartment);
 
 router.get('/processes', masterController.getProcesses);
 router.post('/processes', masterController.createProcess);
+router.put('/processes/:id', masterController.updateProcess);
 router.delete('/processes/:id', masterController.deleteProcess);
 
 router.get('/assets', masterController.getAssets);
 router.post('/assets', masterController.createAsset);
+router.put('/assets/:id', masterController.updateAsset);
 router.delete('/assets/:id', masterController.deleteAsset);
 
 router.get('/locations', masterController.getLocations);
 router.post('/locations', masterController.createLocation);
+router.put('/locations/:id', masterController.updateLocation);
 router.delete('/locations/:id', masterController.deleteLocation);
 
 router.get('/bus', masterController.getBusinessUnits);
 router.post('/bus', masterController.createBusinessUnit);
+router.put('/bus/:id', masterController.updateBusinessUnit);
 router.delete('/bus/:id', masterController.deleteBusinessUnit);
 
 // Standards & Clauses
 router.get('/standards', masterController.getStandards);
 router.post('/standards', masterController.createStandard);
+router.put('/standards/:id', masterController.updateStandard);
 router.delete('/standards/:id', masterController.deleteStandard);
 
 router.get('/clauses', masterController.getStandardClauses);
 router.post('/clauses', masterController.createStandardClause);
+router.put('/clauses/:id', masterController.updateStandardClause);
 router.delete('/clauses/:id', masterController.deleteStandardClause);
 
 // Audit Logs

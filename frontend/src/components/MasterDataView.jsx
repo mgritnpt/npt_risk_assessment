@@ -11,27 +11,35 @@ import {
   deleteMasterImpact,
   getMasterCategories,
   createMasterCategory,
+  updateMasterCategory,
   deleteMasterCategory,
   getMasterDepartments,
   createMasterDepartment,
+  updateMasterDepartment,
   deleteMasterDepartment,
   getMasterProcesses,
   createMasterProcess,
+  updateMasterProcess,
   deleteMasterProcess,
   getMasterAssets,
   createMasterAsset,
+  updateMasterAsset,
   deleteMasterAsset,
   getMasterLocations,
   createMasterLocation,
+  updateMasterLocation,
   deleteMasterLocation,
   getMasterBUs,
   createMasterBU,
+  updateMasterBU,
   deleteMasterBU,
   getMasterStandards,
   createMasterStandard,
+  updateMasterStandard,
   deleteMasterStandard,
   getMasterClauses,
   createMasterClause,
+  updateMasterClause,
   deleteMasterClause,
   getAuditLogs
 } from '../services/api';
@@ -52,9 +60,8 @@ export default function MasterDataView() {
   const [clauses, setClauses] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
 
-  // Editing state for Likelihood
+  // Editing state for Likelihood & Impact
   const [editingL, setEditingL] = useState(null);
-  // Editing state for Impact
   const [editingI, setEditingI] = useState(null);
 
   // New Item States
@@ -106,7 +113,12 @@ export default function MasterDataView() {
   // Likelihood Handlers
   const handleSaveLikelihood = async (item) => {
     try {
-      await updateMasterLikelihood(item.LikelihoodID, item);
+      const id = item.LikelihoodCriteriaID || item.LikelihoodID;
+      if (!id) {
+        alert('ไม่พบ ID สำหรับบันทึก Likelihood');
+        return;
+      }
+      await updateMasterLikelihood(id, item);
       alert('บันทึกเกณฑ์ Likelihood สำเร็จ!');
       setEditingL(null);
       loadAllMaster();
@@ -118,7 +130,12 @@ export default function MasterDataView() {
   // Impact Handlers
   const handleSaveImpact = async (item) => {
     try {
-      await updateMasterImpact(item.ImpactID, item);
+      const id = item.ImpactCriteriaID || item.ImpactID;
+      if (!id) {
+        alert('ไม่พบ ID สำหรับบันทึก Impact');
+        return;
+      }
+      await updateMasterImpact(id, item);
       alert('บันทึกเกณฑ์ Impact สำเร็จ!');
       setEditingI(null);
       loadAllMaster();
@@ -144,6 +161,10 @@ export default function MasterDataView() {
   };
 
   const handleDeleteCategory = async (id) => {
+    if (!id) {
+      alert('ไม่พบ ID สำหรับลบ Category');
+      return;
+    }
     if (!window.confirm('คุณต้องการลบ Category นี้ใช่หรือไม่?')) return;
     try {
       await deleteMasterCategory(id);
@@ -170,6 +191,10 @@ export default function MasterDataView() {
   };
 
   const handleDeleteDepartment = async (id) => {
+    if (!id) {
+      alert('ไม่พบ ID สำหรับลบ Department');
+      return;
+    }
     if (!window.confirm('คุณต้องการลบ Department นี้ใช่หรือไม่?')) return;
     try {
       await deleteMasterDepartment(id);
@@ -199,6 +224,10 @@ export default function MasterDataView() {
   };
 
   const handleDeleteProcess = async (id) => {
+    if (!id) {
+      alert('ไม่พบ ID สำหรับลบ Process');
+      return;
+    }
     if (!window.confirm('คุณต้องการลบ Process นี้ใช่หรือไม่?')) return;
     try {
       await deleteMasterProcess(id);
@@ -225,6 +254,10 @@ export default function MasterDataView() {
   };
 
   const handleDeleteAsset = async (id) => {
+    if (!id) {
+      alert('ไม่พบ ID สำหรับลบ Asset');
+      return;
+    }
     if (!window.confirm('คุณต้องการลบ Asset นี้ใช่หรือไม่?')) return;
     try {
       await deleteMasterAsset(id);
@@ -251,6 +284,10 @@ export default function MasterDataView() {
   };
 
   const handleDeleteLocation = async (id) => {
+    if (!id) {
+      alert('ไม่พบ ID สำหรับลบ Location');
+      return;
+    }
     if (!window.confirm('คุณต้องการลบ Location นี้ใช่หรือไม่?')) return;
     try {
       await deleteMasterLocation(id);
@@ -277,6 +314,10 @@ export default function MasterDataView() {
   };
 
   const handleDeleteBU = async (id) => {
+    if (!id) {
+      alert('ไม่พบ ID สำหรับลบ Business Unit');
+      return;
+    }
     if (!window.confirm('คุณต้องการลบ Business Unit นี้ใช่หรือไม่?')) return;
     try {
       await deleteMasterBU(id);
@@ -303,6 +344,10 @@ export default function MasterDataView() {
   };
 
   const handleDeleteStandard = async (id) => {
+    if (!id) {
+      alert('ไม่พบ ID สำหรับลบ Standard');
+      return;
+    }
     if (!window.confirm('คุณต้องการลบ Standard นี้ใช่หรือไม่?')) return;
     try {
       await deleteMasterStandard(id);
@@ -332,6 +377,10 @@ export default function MasterDataView() {
   };
 
   const handleDeleteClause = async (id) => {
+    if (!id) {
+      alert('ไม่พบ ID สำหรับลบ Clause');
+      return;
+    }
     if (!window.confirm('คุณต้องการลบ Clause นี้ใช่หรือไม่?')) return;
     try {
       await deleteMasterClause(id);
@@ -428,71 +477,75 @@ export default function MasterDataView() {
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
           <h3 className="text-sm font-bold text-slate-900 uppercase">Likelihood Evaluation Criteria (L1 to L5)</h3>
           <div className="space-y-4">
-            {likelihoods.map((item) => (
-              <div key={item.LikelihoodID} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-lg bg-indigo-600 text-white font-extrabold flex items-center justify-center text-sm">
-                      L{item.LikelihoodScore}
-                    </span>
-                    <span className="font-bold text-sm text-slate-900">{item.LevelName} ({item.LevelNameTH})</span>
-                  </div>
-                  {editingL?.LikelihoodID === item.LikelihoodID ? (
+            {likelihoods.map((item) => {
+              const itemId = item.LikelihoodCriteriaID || item.LikelihoodID;
+              const isEditing = editingL && (editingL.LikelihoodCriteriaID || editingL.LikelihoodID) === itemId;
+              return (
+                <div key={itemId} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-lg bg-indigo-600 text-white font-extrabold flex items-center justify-center text-sm">
+                        L{item.LikelihoodScore}
+                      </span>
+                      <span className="font-bold text-sm text-slate-900">{item.LevelName} ({item.LevelNameTH})</span>
+                    </div>
+                    {isEditing ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleSaveLikelihood(editingL)}
+                          className="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-emerald-700"
+                        >
+                          <Save className="w-3.5 h-3.5" /> Save Changes
+                        </button>
+                        <button
+                          onClick={() => setEditingL(null)}
+                          className="bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
                       <button
-                        onClick={() => handleSaveLikelihood(editingL)}
-                        className="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-emerald-700"
+                        onClick={() => setEditingL(item)}
+                        className="bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-1 rounded text-xs font-bold flex items-center gap-1"
                       >
-                        <Save className="w-3.5 h-3.5" /> Save Changes
+                        <Edit2 className="w-3.5 h-3.5" /> Edit Criteria
                       </button>
-                      <button
-                        onClick={() => setEditingL(null)}
-                        className="bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs"
-                      >
-                        Cancel
-                      </button>
+                    )}
+                  </div>
+
+                  {isEditing ? (
+                    <div className="space-y-2 pt-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500">Definition (คำนิยาม)</label>
+                        <input
+                          type="text"
+                          value={editingL.Definition || ''}
+                          onChange={(e) => setEditingL({ ...editingL, Definition: e.target.value })}
+                          className="w-full text-xs p-2 border rounded bg-white"
+                          placeholder="Definition..."
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500">Frequency (ความถี่การเกิด)</label>
+                        <input
+                          type="text"
+                          value={editingL.FrequencyDescription || ''}
+                          onChange={(e) => setEditingL({ ...editingL, FrequencyDescription: e.target.value })}
+                          className="w-full text-xs p-2 border rounded bg-white"
+                          placeholder="Frequency..."
+                        />
+                      </div>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => setEditingL(item)}
-                      className="bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-1 rounded text-xs font-bold flex items-center gap-1"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" /> Edit Criteria
-                    </button>
+                    <div className="text-xs text-slate-600 space-y-1">
+                      <p><strong>Definition:</strong> {item.Definition}</p>
+                      <p className="text-slate-500"><strong>Frequency:</strong> {item.FrequencyDescription}</p>
+                    </div>
                   )}
                 </div>
-
-                {editingL?.LikelihoodID === item.LikelihoodID ? (
-                  <div className="space-y-2 pt-2">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500">Definition (คำนิยาม)</label>
-                      <input
-                        type="text"
-                        value={editingL.Definition}
-                        onChange={(e) => setEditingL({ ...editingL, Definition: e.target.value })}
-                        className="w-full text-xs p-2 border rounded bg-white"
-                        placeholder="Definition..."
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500">Frequency (ความถี่การเกิด)</label>
-                      <input
-                        type="text"
-                        value={editingL.FrequencyDescription}
-                        onChange={(e) => setEditingL({ ...editingL, FrequencyDescription: e.target.value })}
-                        className="w-full text-xs p-2 border rounded bg-white"
-                        placeholder="Frequency..."
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-slate-600 space-y-1">
-                    <p><strong>Definition:</strong> {item.Definition}</p>
-                    <p className="text-slate-500"><strong>Frequency:</strong> {item.FrequencyDescription}</p>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -514,62 +567,66 @@ export default function MasterDataView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {impacts.map((item) => (
-                  <tr key={item.ImpactID} className="hover:bg-slate-50">
-                    <td className="py-3 px-3 font-bold text-indigo-700">{item.ImpactCategory}</td>
-                    <td className="py-3 px-3 font-mono font-bold">I{item.ImpactScore}</td>
-                    <td className="py-3 px-3 font-medium text-slate-900">{item.LevelName} ({item.LevelNameTH})</td>
-                    <td className="py-3 px-3 max-w-xs">
-                      {editingI?.ImpactID === item.ImpactID ? (
-                        <input
-                          type="text"
-                          value={editingI.Definition}
-                          onChange={(e) => setEditingI({ ...editingI, Definition: e.target.value })}
-                          className="w-full text-xs p-1 border rounded"
-                        />
-                      ) : (
-                        item.Definition
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-slate-500 max-w-xs">
-                      {editingI?.ImpactID === item.ImpactID ? (
-                        <input
-                          type="text"
-                          value={editingI.FinancialThreshold || editingI.OperationalImpact}
-                          onChange={(e) => setEditingI({ ...editingI, FinancialThreshold: e.target.value, OperationalImpact: e.target.value })}
-                          className="w-full text-xs p-1 border rounded"
-                        />
-                      ) : (
-                        item.FinancialThreshold || item.OperationalImpact || '-'
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      {editingI?.ImpactID === item.ImpactID ? (
-                        <div className="flex items-center justify-end gap-1">
+                {impacts.map((item) => {
+                  const itemId = item.ImpactCriteriaID || item.ImpactID;
+                  const isEditing = editingI && (editingI.ImpactCriteriaID || editingI.ImpactID) === itemId;
+                  return (
+                    <tr key={itemId} className="hover:bg-slate-50">
+                      <td className="py-3 px-3 font-bold text-indigo-700">{item.ImpactCategory}</td>
+                      <td className="py-3 px-3 font-mono font-bold">I{item.ImpactScore}</td>
+                      <td className="py-3 px-3 font-medium text-slate-900">{item.LevelName} ({item.LevelNameTH})</td>
+                      <td className="py-3 px-3 max-w-xs">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editingI.Definition || ''}
+                            onChange={(e) => setEditingI({ ...editingI, Definition: e.target.value })}
+                            className="w-full text-xs p-1 border rounded"
+                          />
+                        ) : (
+                          item.Definition
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-slate-500 max-w-xs">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editingI.FinancialThreshold || editingI.OperationalImpact || ''}
+                            onChange={(e) => setEditingI({ ...editingI, FinancialThreshold: e.target.value, OperationalImpact: e.target.value })}
+                            className="w-full text-xs p-1 border rounded"
+                          />
+                        ) : (
+                          item.FinancialThreshold || item.OperationalImpact || '-'
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        {isEditing ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleSaveImpact(editingI)}
+                              className="bg-emerald-600 text-white px-2 py-1 rounded text-[11px] font-bold"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingI(null)}
+                              className="bg-slate-200 text-slate-700 px-2 py-1 rounded text-[11px]"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            onClick={() => handleSaveImpact(editingI)}
-                            className="bg-emerald-600 text-white px-2 py-1 rounded text-[11px] font-bold"
+                            onClick={() => setEditingI(item)}
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded text-[11px] font-bold"
                           >
-                            Save
+                            Edit
                           </button>
-                          <button
-                            onClick={() => setEditingI(null)}
-                            className="bg-slate-200 text-slate-700 px-2 py-1 rounded text-[11px]"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setEditingI(item)}
-                          className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded text-[11px] font-bold"
-                        >
-                          Edit
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -626,24 +683,27 @@ export default function MasterDataView() {
           </form>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {categories.map((c) => (
-              <div key={c.CategoryID} className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-start justify-between">
-                <div>
-                  <span className="font-mono text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                    {c.CategoryCode}
-                  </span>
-                  <p className="font-bold text-slate-900 text-xs mt-1.5">{c.CategoryName}</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">{c.Description || '-'}</p>
+            {categories.map((c) => {
+              const catId = c.CategoryID || c.RiskCategoryID;
+              return (
+                <div key={catId} className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-start justify-between">
+                  <div>
+                    <span className="font-mono text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                      {c.CategoryCode}
+                    </span>
+                    <p className="font-bold text-slate-900 text-xs mt-1.5">{c.CategoryName}</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{c.Description || '-'}</p>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteCategory(catId)}
+                    className="text-slate-400 hover:text-red-600 p-1"
+                    title="Delete Category"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDeleteCategory(c.CategoryID)}
-                  className="text-slate-400 hover:text-red-600 p-1"
-                  title="Delete Category"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
