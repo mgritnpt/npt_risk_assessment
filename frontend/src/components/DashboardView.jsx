@@ -12,8 +12,40 @@ import {
   Layers
 } from 'lucide-react';
 
-export default function DashboardView({ dashboardData, onSelectRisk, activeMatrixCell, onHeatmapCellClick }) {
-  if (!dashboardData) {
+export default function DashboardView({ dashboardData, isLoading, fetchError, onRetry, onSelectRisk, activeMatrixCell, onHeatmapCellClick }) {
+  if (fetchError) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center space-y-4 my-8 shadow-sm max-w-2xl mx-auto">
+        <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-red-900">ไม่สามารถเชื่อมต่อฐานข้อมูลได้</h3>
+          <p className="text-xs text-red-700 mt-1 max-w-md mx-auto leading-relaxed">
+            {fetchError}
+          </p>
+        </div>
+        <div className="p-3 bg-white rounded-lg border border-red-100 text-left text-xs text-slate-600 space-y-1">
+          <p className="font-bold text-slate-800">💡 การแก้ไขเบื้องต้นสำหรับ Portainer / Docker:</p>
+          <ul className="list-disc list-inside text-[11px] text-slate-600 space-y-0.5">
+            <li>ตรวจสอบ Environment Variable <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-800">DB_PASSWORD</code> ใน Portainer Stack</li>
+            <li>ตรวจสอบว่าเครื่อง Host/Portainer สามารถเข้าถึง SQL Server IP <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-800">172.17.21.11:1433</code> ได้หรือไม่</li>
+            <li>หากเพิ่งอัปเดต Stack ให้กดปุ่ม <strong>"Update the stack"</strong> แล้วเลือก <strong>"Pull latest image"</strong></li>
+          </ul>
+        </div>
+        <div>
+          <button
+            onClick={onRetry}
+            className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 shadow transition-colors"
+          >
+            ลองเชื่อมต่อใหม่อีกครั้ง (Retry)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || !dashboardData) {
     return (
       <div className="flex items-center justify-center py-24 text-slate-400">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mr-3"></div>

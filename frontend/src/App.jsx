@@ -33,12 +33,18 @@ export default function App() {
   const [locations, setLocations] = useState([]);
   const [bus, setBUs] = useState([]);
 
+  // Loading & Error States
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+
   // Modals State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingRiskId, setEditingRiskId] = useState(null);
   const [selectedRiskId, setSelectedRiskId] = useState(null);
 
   const fetchAllData = async () => {
+    setIsLoading(true);
+    setFetchError(null);
     try {
       const [dashRes, risksRes, catRes, deptRes, stdRes, assetRes, locRes, buRes] = await Promise.all([
         getDashboardSummary(),
@@ -59,8 +65,13 @@ export default function App() {
       setAssets(assetRes);
       setLocations(locRes);
       setBUs(buRes);
+      setFetchError(null);
     } catch (err) {
       console.error('Error loading application data:', err);
+      const errMsg = err.response?.data?.message || err.response?.data?.error || err.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์หรือฐานข้อมูลได้';
+      setFetchError(errMsg);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -100,6 +111,9 @@ export default function App() {
         {currentTab === 'dashboard' && (
           <DashboardView
             dashboardData={dashboardData}
+            isLoading={isLoading}
+            fetchError={fetchError}
+            onRetry={fetchAllData}
             onSelectRisk={(id) => setSelectedRiskId(id)}
             activeMatrixCell={activeMatrixCell}
             onHeatmapCellClick={handleHeatmapCellClick}
