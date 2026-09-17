@@ -38,7 +38,7 @@ CREATE TABLE dbo.[Global_RowPointer] (
         CONSTRAINT PK_Global_RowPointer PRIMARY KEY
         DEFAULT NEWSEQUENTIALID(),
     TableName SYSNAME NOT NULL,
-    RecordID BIGINT NULL,
+    RecordID NVARCHAR(200) NULL,
     CreateDate DATETIME2 NOT NULL DEFAULT GETDATE(),
     CreatedBy NVARCHAR(100) NOT NULL DEFAULT 'system'
 );
@@ -1449,7 +1449,7 @@ GO
 CREATE TABLE dbo.[Audit_Log] (
     AuditLogID BIGINT IDENTITY(1,1) PRIMARY KEY,
     TableName SYSNAME NOT NULL,
-    RecordID BIGINT NULL,
+    RecordID NVARCHAR(200) NULL,
     RowPointer UNIQUEIDENTIFIER NULL,
 
     ActionType NVARCHAR(50) NOT NULL,
