@@ -2,14 +2,14 @@ const sql = require('mssql');
 require('dotenv').config();
 
 const config = {
-  user: process.env.DB_USER || 'sa',
+  user: process.env.DB_USER || 'it_app_adm',
   password: process.env.DB_PASSWORD || '',
-  server: process.env.DB_SERVER || '127.0.0.1',
+  server: process.env.DB_SERVER || '172.17.21.11',
   port: parseInt(process.env.DB_PORT || '1433', 10),
-  database: process.env.DB_NAME || 'IT_Apps',
+  database: process.env.DB_NAME || 'IT_App_Dev',
   options: {
     encrypt: process.env.DB_ENCRYPT === 'true',
-    trustServerCertificate: process.env.DB_TRUST_SERVER_CERT === 'true',
+    trustServerCertificate: process.env.DB_TRUST_SERVER_CERT !== 'false',
   },
   pool: {
     max: 10,

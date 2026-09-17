@@ -3,14 +3,15 @@ const path = require('path');
 const { getPool, connectDB } = require('./db');
 
 async function autoInitDatabase() {
+  const dbName = process.env.DB_NAME || 'IT_App_Dev';
   try {
-    // 1. Connect to master database to ensure IT_Apps exists
+    // 1. Connect to master database to ensure DB exists
     try {
       const masterPool = await getPool('master');
       await masterPool.request().query(`
-        IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'IT_Apps')
+        IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '${dbName}')
         BEGIN
-          CREATE DATABASE IT_Apps;
+          CREATE DATABASE [${dbName}];
         END
       `);
       await masterPool.close();

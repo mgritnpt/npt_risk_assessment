@@ -25,20 +25,25 @@ async function runSqlFile(pool, filePath) {
 }
 
 async function initializeDatabase() {
-  console.log('[DB Init] Starting Database Initialization...');
+  const dbName = process.env.DB_NAME || 'IT_App_Dev';
+  console.log(`[DB Init] Starting Database Initialization for ${dbName}...`);
 
   try {
-    // 1. Ensure IT_Apps DB exists using master pool connection
+    // 1. Ensure DB exists using master pool connection
     console.log('[DB Init] Connecting to master database...');
     const masterPool = await getPool('master');
-    const sql001Path = path.join(__dirname, '../../database/001_create_database.sql');
-    await runSqlFile(masterPool, sql001Path);
-    console.log('[DB Init] Step 1 Complete: Database IT_Apps verified/created.');
+    await masterPool.request().query(`
+      IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '${dbName}')
+      BEGIN
+        CREATE DATABASE [${dbName}];
+      END
+    `);
+    console.log(`[DB Init] Step 1 Complete: Database ${dbName} verified/created.`);
     await masterPool.close();
 
-    // 2. Connect to IT_Apps DB to run tables script
-    console.log('[DB Init] Connecting to IT_Apps database...');
-    const dbPool = await getPool('IT_Apps');
+    // 2. Connect to target DB to run tables script
+    console.log(`[DB Init] Connecting to ${dbName} database...`);
+    const dbPool = await getPool(dbName);
     const sql002Path = path.join(__dirname, '../../database/002_create_tables.sql');
     await runSqlFile(dbPool, sql002Path);
     console.log('[DB Init] Step 2 Complete: Database tables created with audit columns.');
