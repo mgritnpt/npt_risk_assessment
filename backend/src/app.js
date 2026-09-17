@@ -29,19 +29,23 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date(), service: 'IT Risk Assessment API' });
 });
 
-// Start Server & Connect DB
+// Start Server immediately so port 5001 is listening right away (prevents Nginx 502 Bad Gateway)
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+});
+
+// Connect to Database & Auto-Init Schema asynchronously
 connectDB()
   .then(async () => {
-    await autoInitDatabase();
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
-    });
+    try {
+      await autoInitDatabase();
+      console.log('✅ Database initialization complete.');
+    } catch (e) {
+      console.error('⚠️ Database initialization warning:', e.message);
+    }
   })
   .catch((err) => {
-    console.error('Failed to connect to database. Starting server in offline mode...', err.message);
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`⚠️ Server running in OFFLINE mode on http://0.0.0.0:${PORT}`);
-    });
+    console.error('⚠️ Database connection failed. Server running with fallback handlers:', err.message);
   });
 
 module.exports = app;
