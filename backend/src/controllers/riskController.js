@@ -232,15 +232,15 @@ const createRisk = async (req, res) => {
       .input('ReviewDate', sql.Date, header.ReviewDate || null)
       .input('AssessmentType', sql.NVarChar, header.AssessmentType || 'Initial')
       .input('RiskType', sql.NVarChar, header.RiskType || 'IT Risk')
-      .input('CategoryID', sql.BigInt, header.CategoryID)
-      .input('DepartmentID', sql.BigInt, header.DepartmentID)
-      .input('ProcessID', sql.BigInt, header.ProcessID || null)
-      .input('LocationID', sql.BigInt, header.LocationID || null)
-      .input('BUID', sql.BigInt, header.BUID || null)
-      .input('AssetID', sql.BigInt, header.AssetID || null)
-      .input('RiskOwnerID', sql.BigInt, header.RiskOwnerID || null)
-      .input('AssessorID', sql.BigInt, header.AssessorID || null)
-      .input('ApproverID', sql.BigInt, header.ApproverID || null)
+      .input('CategoryID', sql.BigInt, header.CategoryID ? parseInt(header.CategoryID, 10) : null)
+      .input('DepartmentID', sql.BigInt, header.DepartmentID ? parseInt(header.DepartmentID, 10) : null)
+      .input('ProcessID', sql.BigInt, header.ProcessID ? parseInt(header.ProcessID, 10) : null)
+      .input('LocationID', sql.BigInt, header.LocationID ? parseInt(header.LocationID, 10) : null)
+      .input('BUID', sql.BigInt, header.BUID ? parseInt(header.BUID, 10) : null)
+      .input('AssetID', sql.BigInt, header.AssetID ? parseInt(header.AssetID, 10) : null)
+      .input('RiskOwnerID', sql.BigInt, header.RiskOwnerID ? parseInt(header.RiskOwnerID, 10) : null)
+      .input('AssessorID', sql.BigInt, header.AssessorID ? parseInt(header.AssessorID, 10) : null)
+      .input('ApproverID', sql.BigInt, header.ApproverID ? parseInt(header.ApproverID, 10) : null)
       .input('Threat', sql.NVarChar, header.Threat || '')
       .input('Vulnerability', sql.NVarChar, header.Vulnerability || '')
       .input('RiskCause', sql.NVarChar, header.RiskCause || '')
@@ -249,13 +249,12 @@ const createRisk = async (req, res) => {
       .input('PotentialImpact', sql.NVarChar, header.PotentialImpact || '')
       .input('Status', sql.NVarChar, header.Status || 'Open');
 
-    const headerInsert = await headerReq.query(`
+    await headerReq.query(`
       INSERT INTO dbo.RiskHeader (
         RiskNo, RiskTitle, RiskDescription, AssessmentDate, ReviewDate, AssessmentType, RiskType,
         CategoryID, DepartmentID, ProcessID, LocationID, BUID, AssetID, RiskOwnerID, AssessorID, ApproverID,
         Threat, Vulnerability, RiskCause, RiskConsequence, ExistingCondition, PotentialImpact, Status
       )
-      OUTPUT INSERTED.RiskID
       VALUES (
         @RiskNo, @RiskTitle, @RiskDescription, @AssessmentDate, @ReviewDate, @AssessmentType, @RiskType,
         @CategoryID, @DepartmentID, @ProcessID, @LocationID, @BUID, @AssetID, @RiskOwnerID, @AssessorID, @ApproverID,
@@ -263,7 +262,12 @@ const createRisk = async (req, res) => {
       )
     `);
 
-    const riskId = headerInsert.recordset[0].RiskID;
+    const idReq = new sql.Request(transaction);
+    const idResult = await idReq
+      .input('RiskNo', sql.NVarChar, riskNo)
+      .query(`SELECT TOP 1 RiskID FROM dbo.Risk_Register WHERE RiskNo = @RiskNo ORDER BY RiskID DESC`);
+
+    const riskId = idResult.recordset[0].RiskID;
 
     // 2. Insert Inherent Assessment
     if (inherentAssessment) {
@@ -452,15 +456,15 @@ const updateRisk = async (req, res) => {
       .input('id', sql.BigInt, id)
       .input('RiskTitle', sql.NVarChar, header.RiskTitle)
       .input('RiskDescription', sql.NVarChar, header.RiskDescription || '')
-      .input('CategoryID', sql.BigInt, header.CategoryID)
-      .input('DepartmentID', sql.BigInt, header.DepartmentID)
-      .input('ProcessID', sql.BigInt, header.ProcessID || null)
-      .input('LocationID', sql.BigInt, header.LocationID || null)
-      .input('BUID', sql.BigInt, header.BUID || null)
-      .input('AssetID', sql.BigInt, header.AssetID || null)
-      .input('RiskOwnerID', sql.BigInt, header.RiskOwnerID || null)
-      .input('AssessorID', sql.BigInt, header.AssessorID || null)
-      .input('ApproverID', sql.BigInt, header.ApproverID || null)
+      .input('CategoryID', sql.BigInt, header.CategoryID ? parseInt(header.CategoryID, 10) : null)
+      .input('DepartmentID', sql.BigInt, header.DepartmentID ? parseInt(header.DepartmentID, 10) : null)
+      .input('ProcessID', sql.BigInt, header.ProcessID ? parseInt(header.ProcessID, 10) : null)
+      .input('LocationID', sql.BigInt, header.LocationID ? parseInt(header.LocationID, 10) : null)
+      .input('BUID', sql.BigInt, header.BUID ? parseInt(header.BUID, 10) : null)
+      .input('AssetID', sql.BigInt, header.AssetID ? parseInt(header.AssetID, 10) : null)
+      .input('RiskOwnerID', sql.BigInt, header.RiskOwnerID ? parseInt(header.RiskOwnerID, 10) : null)
+      .input('AssessorID', sql.BigInt, header.AssessorID ? parseInt(header.AssessorID, 10) : null)
+      .input('ApproverID', sql.BigInt, header.ApproverID ? parseInt(header.ApproverID, 10) : null)
       .input('Threat', sql.NVarChar, header.Threat || '')
       .input('Vulnerability', sql.NVarChar, header.Vulnerability || '')
       .input('RiskCause', sql.NVarChar, header.RiskCause || '')
