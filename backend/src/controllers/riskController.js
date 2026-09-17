@@ -239,6 +239,8 @@ const createRisk = async (req, res) => {
       .input('BUID', sql.BigInt, header.BUID || null)
       .input('AssetID', sql.BigInt, header.AssetID || null)
       .input('RiskOwnerID', sql.BigInt, header.RiskOwnerID || null)
+      .input('AssessorID', sql.BigInt, header.AssessorID || null)
+      .input('ApproverID', sql.BigInt, header.ApproverID || null)
       .input('Threat', sql.NVarChar, header.Threat || '')
       .input('Vulnerability', sql.NVarChar, header.Vulnerability || '')
       .input('RiskCause', sql.NVarChar, header.RiskCause || '')
@@ -250,13 +252,13 @@ const createRisk = async (req, res) => {
     const headerInsert = await headerReq.query(`
       INSERT INTO dbo.RiskHeader (
         RiskNo, RiskTitle, RiskDescription, AssessmentDate, ReviewDate, AssessmentType, RiskType,
-        CategoryID, DepartmentID, ProcessID, LocationID, BUID, AssetID, RiskOwnerID,
+        CategoryID, DepartmentID, ProcessID, LocationID, BUID, AssetID, RiskOwnerID, AssessorID, ApproverID,
         Threat, Vulnerability, RiskCause, RiskConsequence, ExistingCondition, PotentialImpact, Status
       )
       OUTPUT INSERTED.RiskID
       VALUES (
         @RiskNo, @RiskTitle, @RiskDescription, @AssessmentDate, @ReviewDate, @AssessmentType, @RiskType,
-        @CategoryID, @DepartmentID, @ProcessID, @LocationID, @BUID, @AssetID, @RiskOwnerID,
+        @CategoryID, @DepartmentID, @ProcessID, @LocationID, @BUID, @AssetID, @RiskOwnerID, @AssessorID, @ApproverID,
         @Threat, @Vulnerability, @RiskCause, @RiskConsequence, @ExistingCondition, @PotentialImpact, @Status
       )
     `);
@@ -456,6 +458,9 @@ const updateRisk = async (req, res) => {
       .input('LocationID', sql.BigInt, header.LocationID || null)
       .input('BUID', sql.BigInt, header.BUID || null)
       .input('AssetID', sql.BigInt, header.AssetID || null)
+      .input('RiskOwnerID', sql.BigInt, header.RiskOwnerID || null)
+      .input('AssessorID', sql.BigInt, header.AssessorID || null)
+      .input('ApproverID', sql.BigInt, header.ApproverID || null)
       .input('Threat', sql.NVarChar, header.Threat || '')
       .input('Vulnerability', sql.NVarChar, header.Vulnerability || '')
       .input('RiskCause', sql.NVarChar, header.RiskCause || '')
@@ -474,6 +479,9 @@ const updateRisk = async (req, res) => {
         LocationID = @LocationID,
         BUID = @BUID,
         AssetID = @AssetID,
+        RiskOwnerID = @RiskOwnerID,
+        AssessorID = @AssessorID,
+        ApproverID = @ApproverID,
         Threat = @Threat,
         Vulnerability = @Vulnerability,
         RiskCause = @RiskCause,

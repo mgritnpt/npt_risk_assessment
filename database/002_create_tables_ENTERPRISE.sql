@@ -44,11 +44,26 @@ BEGIN
 END;
 GO
 
-/* Disable and drop all foreign key constraints for safe table recreation */
+/* Scoped foreign key drop to protect non-ERM database tables */
 DECLARE @sql NVARCHAR(MAX) = N'';
 SELECT @sql += N'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + '.' + QUOTENAME(OBJECT_NAME(parent_object_id)) + 
               ' DROP CONSTRAINT ' + QUOTENAME(name) + ';' + CHAR(13)
-FROM sys.foreign_keys;
+FROM sys.foreign_keys
+WHERE OBJECT_NAME(parent_object_id) IN (
+    'Global_RowPointer', 'Master_BusinessUnit', 'Master_Department', 'User', 'Master_Location', 
+    'Master_Process', 'Master_Asset', 'Master_RiskDomain', 'Master_RiskCategory', 'Master_RiskType', 
+    'Master_RiskSource', 'Master_Threat', 'Master_Vulnerability', 'Master_Consequence', 
+    'Master_ImpactDimension', 'Master_ImpactCriteria', 'Master_LikelihoodCriteria', 'Master_RiskLevel', 
+    'Master_RiskMatrix', 'Master_ControlType', 'Master_ControlMethod', 'Master_ControlFrequency', 
+    'Master_ControlEffectiveness', 'Master_Control', 'Master_TreatmentStrategy', 'Master_ActionPriority', 
+    'Master_ActionStatus', 'Master_RiskStatus', 'Master_Standard', 'Master_StandardRequirement', 
+    'Master_RiskTemplate', 'Master_RiskTemplate_Threat', 'Master_RiskTemplate_Vulnerability', 
+    'Master_RiskTemplate_Impact', 'Master_RiskTemplate_Control', 'Master_RiskTemplate_Standard', 
+    'Master_RiskTemplate_Department', 'Master_Department_Standard', 'Risk_Register', 'Risk_Threat', 
+    'Risk_Vulnerability', 'Risk_Consequence', 'Risk_Assessment', 'Risk_Assessment_Impact', 
+    'Risk_Control', 'Risk_Standard', 'Risk_Treatment', 'Risk_Action', 'Risk_Monitoring', 
+    'Risk_Acceptance', 'Audit_Log'
+);
 EXEC sp_executesql @sql;
 GO
 
@@ -961,6 +976,7 @@ CREATE TABLE dbo.[Risk_Register] (
 
     RiskOwnerID BIGINT NULL,
     AssessorID BIGINT NULL,
+    ApproverID BIGINT NULL,
 
     ThreatDescription NVARCHAR(3000) NULL,
     VulnerabilityDescription NVARCHAR(3000) NULL,
@@ -986,6 +1002,12 @@ CREATE TABLE dbo.[Risk_Register] (
     RowPointer UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
 
     CONSTRAINT UQ_Risk_Register_RowPointer UNIQUE(RowPointer),
+    CONSTRAINT FK_Risk_Register_Owner FOREIGN KEY(RiskOwnerID)
+        REFERENCES dbo.[User](UserID),
+    CONSTRAINT FK_Risk_Register_Assessor FOREIGN KEY(AssessorID)
+        REFERENCES dbo.[User](UserID),
+    CONSTRAINT FK_Risk_Register_Approver FOREIGN KEY(ApproverID)
+        REFERENCES dbo.[User](UserID),
     CONSTRAINT FK_Risk_Register_Domain FOREIGN KEY(RiskDomainID)
         REFERENCES dbo.Master_RiskDomain(RiskDomainID),
     CONSTRAINT FK_Risk_Register_Category FOREIGN KEY(RiskCategoryID)
@@ -1589,7 +1611,7 @@ BEGIN
         AssetID,
         RiskOwnerID,
         AssessorID,
-        RiskOwnerID AS ApproverID,
+        ISNULL(ApproverID, RiskOwnerID) AS ApproverID,
         ThreatDescription AS Threat,
         VulnerabilityDescription AS Vulnerability,
         RootCause AS RiskCause,
@@ -1617,14 +1639,18 @@ BEGIN
     SET NOCOUNT ON;
     INSERT INTO dbo.Risk_Register (
         RiskNo, RiskTitle, RiskDescription, AssessmentDate, NextReviewDate,
-        RiskCategoryID, DepartmentID, ProcessID, LocationID, BUID, AssetID, RiskOwnerID, AssessorID,
+        RiskCategoryID, DepartmentID, ProcessID, LocationID, BUID, AssetID, RiskOwnerID, AssessorID, ApproverID,
         ThreatDescription, VulnerabilityDescription, RootCause, ConsequenceDescription,
         ExistingCondition, PotentialImpact, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
     )
     SELECT 
         i.RiskNo, i.RiskTitle, i.RiskDescription, ISNULL(i.AssessmentDate, GETDATE()), i.ReviewDate,
-        ISNULL(i.CategoryID, 1), ISNULL(i.DepartmentID, 1), i.ProcessID, i.LocationID, i.BUID, i.AssetID,
-        ISNULL(i.RiskOwnerID, 1), ISNULL(i.AssessorID, ISNULL(i.RiskOwnerID, 1)),
+        ISNULL(i.CategoryID, (SELECT TOP 1 CategoryID FROM dbo.Master_RiskCategory ORDER BY CategoryID)),
+        ISNULL(i.DepartmentID, (SELECT TOP 1 DepartmentID FROM dbo.Master_Department ORDER BY DepartmentID)),
+        i.ProcessID, i.LocationID, i.BUID, i.AssetID,
+        ISNULL(i.RiskOwnerID, (SELECT TOP 1 UserID FROM dbo.[User] ORDER BY UserID)),
+        ISNULL(i.AssessorID, ISNULL(i.RiskOwnerID, (SELECT TOP 1 UserID FROM dbo.[User] ORDER BY UserID))),
+        ISNULL(i.ApproverID, ISNULL(i.RiskOwnerID, (SELECT TOP 1 UserID FROM dbo.[User] ORDER BY UserID))),
         i.Threat, i.Vulnerability, i.RiskCause, i.RiskConsequence,
         i.ExistingCondition, i.PotentialImpact, 
         CASE WHEN i.Status = 'Closed' OR i.IsActive = 0 THEN 0 ELSE 1 END,
@@ -1656,6 +1682,7 @@ BEGIN
         r.AssetID = ISNULL(i.AssetID, r.AssetID),
         r.RiskOwnerID = ISNULL(i.RiskOwnerID, r.RiskOwnerID),
         r.AssessorID = ISNULL(i.AssessorID, r.AssessorID),
+        r.ApproverID = ISNULL(i.ApproverID, r.ApproverID),
         r.ThreatDescription = ISNULL(i.Threat, r.ThreatDescription),
         r.VulnerabilityDescription = ISNULL(i.Vulnerability, r.VulnerabilityDescription),
         r.RootCause = ISNULL(i.RiskCause, r.RootCause),
@@ -1704,6 +1731,14 @@ BEGIN
 END;
 GO
 
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'UX_Risk_Assessment_Current' AND object_id = OBJECT_ID('dbo.Risk_Assessment'))
+    DROP INDEX UX_Risk_Assessment_Current ON dbo.Risk_Assessment;
+GO
+CREATE UNIQUE INDEX UX_Risk_Assessment_Current
+ON dbo.Risk_Assessment(RiskID, AssessmentType)
+WHERE IsCurrent = 1;
+GO
+
 IF OBJECT_ID('dbo.RiskControl', 'V') IS NOT NULL DROP VIEW dbo.RiskControl;
 IF OBJECT_ID('dbo.RiskControl', 'U') IS NULL
 BEGIN
@@ -1727,12 +1762,13 @@ AS
 BEGIN
     SET NOCOUNT ON;
     INSERT INTO dbo.Risk_Control (
-        RiskID, ControlCode, ControlName, ControlDescription, ControlType,
+        RiskID, ControlID, ControlCode, ControlName, ControlDescription, ControlType,
         ManualOrAutomated, ControlOwner, Frequency, ControlEvidence, ControlEffectiveness,
         IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
     )
     SELECT 
-        i.RiskID, ISNULL(i.ControlCode, 'CTL-01'), i.ControlName, i.ControlDescription, i.ControlType,
+        i.RiskID, ISNULL(i.ControlID, (SELECT TOP 1 ControlID FROM dbo.Master_Control ORDER BY ControlID)),
+        ISNULL(i.ControlCode, 'CTL-01'), i.ControlName, i.ControlDescription, i.ControlType,
         i.ManualOrAutomated, i.ControlOwner, i.Frequency, i.ControlEvidence, i.ControlEffectiveness,
         1, GETDATE(), 'system', GETDATE(), 'system'
     FROM inserted i;
@@ -1958,5 +1994,24 @@ AS
 BEGIN
     SET NOCOUNT ON;
     DELETE FROM dbo.Master_StandardRequirement WHERE RequirementID IN (SELECT ClauseID FROM deleted);
+END;
+GO
+
+/* ============================================================================
+   24. GLOBAL ROW POINTER AUTOMATIC REGISTRATION TRIGGER
+   ============================================================================ */
+
+IF OBJECT_ID('dbo.TR_Risk_Register_RegisterGlobalRowPointer', 'TR') IS NOT NULL 
+    DROP TRIGGER dbo.TR_Risk_Register_RegisterGlobalRowPointer;
+GO
+CREATE TRIGGER dbo.TR_Risk_Register_RegisterGlobalRowPointer
+ON dbo.Risk_Register
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Global_RowPointer (RowPointer, TableName, RecordID, CreateDate, CreatedBy)
+    SELECT i.RowPointer, 'Risk_Register', i.RiskNo, GETDATE(), ISNULL(i.CreatedBy, 'system')
+    FROM inserted i;
 END;
 GO
