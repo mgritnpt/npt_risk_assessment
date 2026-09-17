@@ -1,4 +1,25 @@
-USE IT_Apps;
+-- Safe Cleanup before Seeding
+IF OBJECT_ID('dbo.Risk_Acceptance', 'U') IS NOT NULL DELETE FROM dbo.Risk_Acceptance;
+IF OBJECT_ID('dbo.Risk_Action', 'U') IS NOT NULL DELETE FROM dbo.Risk_Action;
+IF OBJECT_ID('dbo.Risk_Standard', 'U') IS NOT NULL DELETE FROM dbo.Risk_Standard;
+IF OBJECT_ID('dbo.Risk_Control', 'U') IS NOT NULL DELETE FROM dbo.Risk_Control;
+IF OBJECT_ID('dbo.Risk_Assessment', 'U') IS NOT NULL DELETE FROM dbo.Risk_Assessment;
+IF OBJECT_ID('dbo.Risk_Register', 'U') IS NOT NULL DELETE FROM dbo.Risk_Register;
+IF OBJECT_ID('dbo.RiskAcceptance', 'U') IS NOT NULL DELETE FROM dbo.RiskAcceptance;
+IF OBJECT_ID('dbo.RiskTreatmentAction', 'U') IS NOT NULL DELETE FROM dbo.RiskTreatmentAction;
+IF OBJECT_ID('dbo.RiskStandardMapping', 'U') IS NOT NULL DELETE FROM dbo.RiskStandardMapping;
+IF OBJECT_ID('dbo.RiskControl', 'U') IS NOT NULL DELETE FROM dbo.RiskControl;
+IF OBJECT_ID('dbo.ResidualRiskAssessment', 'U') IS NOT NULL DELETE FROM dbo.ResidualRiskAssessment;
+IF OBJECT_ID('dbo.InherentRiskAssessment', 'U') IS NOT NULL DELETE FROM dbo.InherentRiskAssessment;
+IF OBJECT_ID('dbo.RiskHeader', 'U') IS NOT NULL DELETE FROM dbo.RiskHeader;
+IF OBJECT_ID('dbo.Master_Asset', 'U') IS NOT NULL DELETE FROM dbo.Master_Asset;
+IF OBJECT_ID('dbo.Master_Process', 'U') IS NOT NULL DELETE FROM dbo.Master_Process;
+IF OBJECT_ID('dbo.Master_Department', 'U') IS NOT NULL DELETE FROM dbo.Master_Department;
+IF OBJECT_ID('dbo.Master_RiskCategory', 'U') IS NOT NULL DELETE FROM dbo.Master_RiskCategory;
+IF OBJECT_ID('dbo.Master_StandardClause', 'U') IS NOT NULL DELETE FROM dbo.Master_StandardClause;
+IF OBJECT_ID('dbo.Master_StandardRequirement', 'U') IS NOT NULL DELETE FROM dbo.Master_StandardRequirement;
+IF OBJECT_ID('dbo.Master_Standard', 'U') IS NOT NULL DELETE FROM dbo.Master_Standard;
+IF OBJECT_ID('dbo.User', 'U') IS NOT NULL DELETE FROM dbo.[User];
 GO
 
 -- ============================================================================

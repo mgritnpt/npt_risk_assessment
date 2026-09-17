@@ -12,10 +12,14 @@ async function runSqlFile(pool, filePath) {
     .filter((s) => s.length > 0);
 
   for (const statement of statements) {
-    // Clean out USE statements since pool is already connected to target DB
     const cleanStmt = statement.replace(/^\s*USE\s+[^\s;]+;?/im, '').trim();
     if (cleanStmt) {
-      await pool.request().query(cleanStmt);
+      try {
+        await pool.request().query(cleanStmt);
+      } catch (err) {
+        console.error('Failed statement snippet:\n', cleanStmt.substring(0, 300));
+        throw err;
+      }
     }
   }
 }
