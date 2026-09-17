@@ -16,8 +16,8 @@ const getDashboardSummary = async (req, res) => {
         SUM(CASE WHEN r.Status = 'In Progress' THEN 1 ELSE 0 END) AS inProgressCount,
         SUM(CASE WHEN r.Status = 'Closed' THEN 1 ELSE 0 END) AS closedCount,
         SUM(CASE WHEN r.Status = 'Accepted' THEN 1 ELSE 0 END) AS acceptedCount
-      FROM dbo.RiskHeader r
-      LEFT JOIN dbo.RiskAssessment ia ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
+      FROM dbo.RiskHeader r WITH (NOLOCK)
+      LEFT JOIN dbo.RiskAssessment ia WITH (NOLOCK) ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
       WHERE r.IsActive = 1;
     `;
     const statsResult = await pool.request().query(statsQuery);
@@ -29,8 +29,8 @@ const getDashboardSummary = async (req, res) => {
         ia.Likelihood, 
         ia.Impact, 
         COUNT(r.RiskID) AS count
-      FROM dbo.RiskHeader r
-      JOIN dbo.RiskAssessment ia ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
+      FROM dbo.RiskHeader r WITH (NOLOCK)
+      JOIN dbo.RiskAssessment ia WITH (NOLOCK) ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
       WHERE r.IsActive = 1
       GROUP BY ia.Likelihood, ia.Impact;
     `;
@@ -52,9 +52,9 @@ const getDashboardSummary = async (req, res) => {
       SELECT 
         s.StandardCode, s.StandardName,
         COUNT(DISTINCT rsm.RiskID) AS mappedRisksCount
-      FROM dbo.Master_Standard s
-      LEFT JOIN dbo.RiskStandardMapping rsm ON s.StandardID = rsm.StandardID
-      LEFT JOIN dbo.RiskHeader r ON rsm.RiskID = r.RiskID AND r.IsActive = 1
+      FROM dbo.Master_Standard s WITH (NOLOCK)
+      LEFT JOIN dbo.RiskStandardMapping rsm WITH (NOLOCK) ON s.StandardID = rsm.StandardID
+      LEFT JOIN dbo.RiskHeader r WITH (NOLOCK) ON rsm.RiskID = r.RiskID AND r.IsActive = 1
       GROUP BY s.StandardID, s.StandardCode, s.StandardName;
     `;
     const standardsResult = await pool.request().query(standardsQuery);
@@ -67,8 +67,8 @@ const getDashboardSummary = async (req, res) => {
         AVG(CAST(ISNULL(ia.AvailabilityImpact, 1) AS FLOAT)) AS avgAvailability,
         AVG(CAST(ISNULL(ia.QualityImpact, 1) AS FLOAT)) AS avgQuality,
         AVG(CAST(ISNULL(ia.FinancialImpact, 1) AS FLOAT)) AS avgFinancial
-      FROM dbo.RiskHeader r
-      JOIN dbo.RiskAssessment ia ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
+      FROM dbo.RiskHeader r WITH (NOLOCK)
+      JOIN dbo.RiskAssessment ia WITH (NOLOCK) ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
       WHERE r.IsActive = 1;
     `;
     const ciaResult = await pool.request().query(ciaQuery);
@@ -79,9 +79,9 @@ const getDashboardSummary = async (req, res) => {
         d.DepartmentCode, d.DepartmentName,
         COUNT(r.RiskID) AS totalRisks,
         SUM(CASE WHEN ia.RiskLevel IN ('Critical', 'High') THEN 1 ELSE 0 END) AS highCriticalCount
-      FROM dbo.Master_Department d
-      LEFT JOIN dbo.RiskHeader r ON d.DepartmentID = r.DepartmentID AND r.IsActive = 1
-      LEFT JOIN dbo.RiskAssessment ia ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
+      FROM dbo.Master_Department d WITH (NOLOCK)
+      LEFT JOIN dbo.RiskHeader r WITH (NOLOCK) ON d.DepartmentID = r.DepartmentID AND r.IsActive = 1
+      LEFT JOIN dbo.RiskAssessment ia WITH (NOLOCK) ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
       GROUP BY d.DepartmentID, d.DepartmentCode, d.DepartmentName;
     `;
     const deptResult = await pool.request().query(deptQuery);
@@ -92,10 +92,10 @@ const getDashboardSummary = async (req, res) => {
         r.RiskID, r.RiskNo, r.RiskTitle, r.Status,
         d.DepartmentName, c.CategoryName,
         ia.Likelihood, ia.Impact, ia.RiskScore, ia.RiskLevel
-      FROM dbo.RiskHeader r
-      LEFT JOIN dbo.Master_Department d ON r.DepartmentID = d.DepartmentID
-      LEFT JOIN dbo.Master_RiskCategory c ON r.CategoryID = c.CategoryID
-      LEFT JOIN dbo.RiskAssessment ia ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
+      FROM dbo.RiskHeader r WITH (NOLOCK)
+      LEFT JOIN dbo.Master_Department d WITH (NOLOCK) ON r.DepartmentID = d.DepartmentID
+      LEFT JOIN dbo.Master_RiskCategory c WITH (NOLOCK) ON r.CategoryID = c.CategoryID
+      LEFT JOIN dbo.RiskAssessment ia WITH (NOLOCK) ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
       WHERE r.IsActive = 1 AND r.Status IN ('Open', 'In Progress')
       ORDER BY ia.RiskScore DESC, r.RiskID DESC;
     `;
@@ -106,8 +106,8 @@ const getDashboardSummary = async (req, res) => {
       SELECT 
         rta.ActionID, rta.TreatmentAction, rta.ActionOwner, rta.TargetDate, rta.Priority, rta.ProgressPercent,
         r.RiskNo, r.RiskTitle
-      FROM dbo.RiskTreatmentAction rta
-      JOIN dbo.RiskHeader r ON rta.RiskID = r.RiskID AND r.IsActive = 1
+      FROM dbo.RiskTreatmentAction rta WITH (NOLOCK)
+      JOIN dbo.RiskHeader r WITH (NOLOCK) ON rta.RiskID = r.RiskID AND r.IsActive = 1
       WHERE rta.Status <> 'Completed' AND rta.TargetDate < GETDATE();
     `;
     const overdueResult = await pool.request().query(overdueQuery);

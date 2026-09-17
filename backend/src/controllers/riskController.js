@@ -54,21 +54,21 @@ const getAllRisks = async (req, res) => {
         ra.RiskLevel AS ResidualLevel,
 
         -- Standard Mapping Count
-        (SELECT COUNT(*) FROM dbo.RiskStandardMapping rsm WHERE rsm.RiskID = r.RiskID) AS StandardMappingCount,
+        (SELECT COUNT(*) FROM dbo.RiskStandardMapping rsm WITH (NOLOCK) WHERE rsm.RiskID = r.RiskID) AS StandardMappingCount,
 
         -- Primary Control Name
-        (SELECT TOP 1 ControlName FROM dbo.RiskControl rc WHERE rc.RiskID = r.RiskID) AS PrimaryControlName
+        (SELECT TOP 1 ControlName FROM dbo.RiskControl rc WITH (NOLOCK) WHERE rc.RiskID = r.RiskID) AS PrimaryControlName
 
-      FROM dbo.RiskHeader r
-      LEFT JOIN dbo.Master_RiskCategory c ON r.CategoryID = c.CategoryID
-      LEFT JOIN dbo.Master_Department d ON r.DepartmentID = d.DepartmentID
-      LEFT JOIN dbo.Master_Process p ON r.ProcessID = p.ProcessID
-      LEFT JOIN dbo.Master_Asset a ON r.AssetID = a.AssetID
-      LEFT JOIN dbo.Master_Location loc ON r.LocationID = loc.LocationID
-      LEFT JOIN dbo.Master_BusinessUnit bu ON r.BUID = bu.BUID
-      LEFT JOIN dbo.[User] uOwner ON r.RiskOwnerID = uOwner.UserID
-      LEFT JOIN dbo.RiskAssessment ia ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
-      LEFT JOIN dbo.RiskAssessment ra ON r.RiskID = ra.RiskID AND ra.AssessmentType = 'RESIDUAL'
+      FROM dbo.RiskHeader r WITH (NOLOCK)
+      LEFT JOIN dbo.Master_RiskCategory c WITH (NOLOCK) ON r.CategoryID = c.CategoryID
+      LEFT JOIN dbo.Master_Department d WITH (NOLOCK) ON r.DepartmentID = d.DepartmentID
+      LEFT JOIN dbo.Master_Process p WITH (NOLOCK) ON r.ProcessID = p.ProcessID
+      LEFT JOIN dbo.Master_Asset a WITH (NOLOCK) ON r.AssetID = a.AssetID
+      LEFT JOIN dbo.Master_Location loc WITH (NOLOCK) ON r.LocationID = loc.LocationID
+      LEFT JOIN dbo.Master_BusinessUnit bu WITH (NOLOCK) ON r.BUID = bu.BUID
+      LEFT JOIN dbo.[User] uOwner WITH (NOLOCK) ON r.RiskOwnerID = uOwner.UserID
+      LEFT JOIN dbo.RiskAssessment ia WITH (NOLOCK) ON r.RiskID = ia.RiskID AND ia.AssessmentType = 'INHERENT'
+      LEFT JOIN dbo.RiskAssessment ra WITH (NOLOCK) ON r.RiskID = ra.RiskID AND ra.AssessmentType = 'RESIDUAL'
       WHERE r.IsActive = 1
     `;
 
@@ -78,13 +78,15 @@ const getAllRisks = async (req, res) => {
       query += ` AND (r.RiskNo LIKE @search OR r.RiskTitle LIKE @search OR r.Threat LIKE @search OR r.Vulnerability LIKE @search)`;
       request.input('search', sql.NVarChar, `%${search}%`);
     }
-    if (categoryID) {
+    const catId = parseBigInt(categoryID);
+    if (catId) {
       query += ` AND r.CategoryID = @categoryID`;
-      request.input('categoryID', sql.BigInt, categoryID);
+      request.input('categoryID', sql.BigInt, catId);
     }
-    if (departmentID) {
+    const deptId = parseBigInt(departmentID);
+    if (deptId) {
       query += ` AND r.DepartmentID = @departmentID`;
-      request.input('departmentID', sql.BigInt, departmentID);
+      request.input('departmentID', sql.BigInt, deptId);
     }
     if (status) {
       query += ` AND r.Status = @status`;
@@ -117,21 +119,21 @@ const getRiskById = async (req, res) => {
 
     // 1. Header Detail
     const headerResult = await pool.request()
-      .input('id', sql.BigInt, id)
+      .input('id', sql.BigInt, parseBigInt(id))
       .query(`
         SELECT 
           r.*,
           c.CategoryName, d.DepartmentName, p.ProcessName, a.AssetName,
           loc.LocationName, bu.BUName,
           uOwner.FullName AS RiskOwnerName
-        FROM dbo.RiskHeader r
-        LEFT JOIN dbo.Master_RiskCategory c ON r.CategoryID = c.CategoryID
-        LEFT JOIN dbo.Master_Department d ON r.DepartmentID = d.DepartmentID
-        LEFT JOIN dbo.Master_Process p ON r.ProcessID = p.ProcessID
-        LEFT JOIN dbo.Master_Asset a ON r.AssetID = a.AssetID
-        LEFT JOIN dbo.Master_Location loc ON r.LocationID = loc.LocationID
-        LEFT JOIN dbo.Master_BusinessUnit bu ON r.BUID = bu.BUID
-        LEFT JOIN dbo.[User] uOwner ON r.RiskOwnerID = uOwner.UserID
+        FROM dbo.RiskHeader r WITH (NOLOCK)
+        LEFT JOIN dbo.Master_RiskCategory c WITH (NOLOCK) ON r.CategoryID = c.CategoryID
+        LEFT JOIN dbo.Master_Department d WITH (NOLOCK) ON r.DepartmentID = d.DepartmentID
+        LEFT JOIN dbo.Master_Process p WITH (NOLOCK) ON r.ProcessID = p.ProcessID
+        LEFT JOIN dbo.Master_Asset a WITH (NOLOCK) ON r.AssetID = a.AssetID
+        LEFT JOIN dbo.Master_Location loc WITH (NOLOCK) ON r.LocationID = loc.LocationID
+        LEFT JOIN dbo.Master_BusinessUnit bu WITH (NOLOCK) ON r.BUID = bu.BUID
+        LEFT JOIN dbo.[User] uOwner WITH (NOLOCK) ON r.RiskOwnerID = uOwner.UserID
         WHERE r.RiskID = @id AND r.IsActive = 1
       `);
 
@@ -142,40 +144,40 @@ const getRiskById = async (req, res) => {
 
     // 2. Assessments (Inherent & Residual)
     const assessmentResult = await pool.request()
-      .input('id', sql.BigInt, id)
-      .query(`SELECT * FROM dbo.RiskAssessment WHERE RiskID = @id`);
+      .input('id', sql.BigInt, parseBigInt(id))
+      .query(`SELECT * FROM dbo.RiskAssessment WITH (NOLOCK) WHERE RiskID = @id`);
 
     const inherentAssessment = assessmentResult.recordset.find(a => a.AssessmentType === 'INHERENT') || null;
     const residualAssessment = assessmentResult.recordset.find(a => a.AssessmentType === 'RESIDUAL') || null;
 
     // 3. Controls
     const controlsResult = await pool.request()
-      .input('id', sql.BigInt, id)
-      .query(`SELECT * FROM dbo.RiskControl WHERE RiskID = @id`);
+      .input('id', sql.BigInt, parseBigInt(id))
+      .query(`SELECT * FROM dbo.RiskControl WITH (NOLOCK) WHERE RiskID = @id`);
 
     // 4. Standards Mapped
     const standardsResult = await pool.request()
-      .input('id', sql.BigInt, id)
+      .input('id', sql.BigInt, parseBigInt(id))
       .query(`
         SELECT 
           rsm.*,
           s.StandardCode, s.StandardName,
           sc.ClauseNo, sc.ClauseTitle
-        FROM dbo.RiskStandardMapping rsm
-        LEFT JOIN dbo.Master_Standard s ON rsm.StandardID = s.StandardID
-        LEFT JOIN dbo.Master_StandardClause sc ON rsm.ClauseID = sc.ClauseID
+        FROM dbo.RiskStandardMapping rsm WITH (NOLOCK)
+        LEFT JOIN dbo.Master_Standard s WITH (NOLOCK) ON rsm.StandardID = s.StandardID
+        LEFT JOIN dbo.Master_StandardClause sc WITH (NOLOCK) ON rsm.ClauseID = sc.ClauseID
         WHERE rsm.RiskID = @id
       `);
 
     // 5. Treatment Actions
     const actionsResult = await pool.request()
-      .input('id', sql.BigInt, id)
-      .query(`SELECT * FROM dbo.RiskTreatmentAction WHERE RiskID = @id`);
+      .input('id', sql.BigInt, parseBigInt(id))
+      .query(`SELECT * FROM dbo.RiskTreatmentAction WITH (NOLOCK) WHERE RiskID = @id`);
 
     // 6. Acceptance
     const acceptanceResult = await pool.request()
-      .input('id', sql.BigInt, id)
-      .query(`SELECT TOP 1 * FROM dbo.RiskAcceptance WHERE RiskID = @id`);
+      .input('id', sql.BigInt, parseBigInt(id))
+      .query(`SELECT TOP 1 * FROM dbo.RiskAcceptance WITH (NOLOCK) WHERE RiskID = @id`);
     const acceptance = acceptanceResult.recordset[0] || null;
 
     res.json({
