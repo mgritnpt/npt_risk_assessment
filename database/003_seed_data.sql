@@ -23,7 +23,51 @@ IF OBJECT_ID('dbo.User', 'U') IS NOT NULL DELETE FROM dbo.[User];
 GO
 
 -- ============================================================================
--- 1. SEED USERS (N'...' for Thai Unicode support)
+-- 1. SEED DEPARTMENTS, PROCESSES, LOCATIONS, BUs
+-- ============================================================================
+INSERT INTO dbo.Master_BusinessUnit (BUCode, BUName, Description)
+VALUES
+('BU-AUTO-COAT', N'Automotive & OEM Coatings BU', N'กลุ่มธุรกิจสีพ่นรถยนต์ OEM ป้อนโรงงานประกอบรถยนต์ญี่ปุ่น'),
+('BU-IND-PAINT', N'Industrial & Chemical Coatings BU', N'กลุ่มธุรกิจสีอุตสาหกรรม สีทาเครื่องจักร และสารเคมีเคลือบผิว'),
+('BU-DECO-PAINT', N'Decorative Paint BU', N'กลุ่มธุรกิจสีทาอาคารและสีตกแต่งทั่วไป'),
+('BU-COATING-SERV', N'Surface Coating Service Division', N'กลุ่มธุรกิจบริการพ่นสีและเตรียมผิวชิ้นงานอุตสาหกรรม');
+
+INSERT INTO dbo.Master_Location (LocationCode, LocationName, Description)
+VALUES
+('LOC-HQ-BKK', N'สำนักงานใหญ่ กรุงเทพฯ (HQ Bangkok)', N'ศูนย์บริหารจัดการและทีม IT หลัก'),
+('LOC-PLANT1-CHON', N'โรงงานชลบุรี (Plant 1 Chonburi)', N'โรงงานผลิตสีพ่นรถยนต์ OEM (IATF 16949 / JAMA Requirement)'),
+('LOC-PLANT2-RAYONG', N'โรงงานระยอง (Plant 2 Rayong)', N'โรงงานผลิตสีอุตสาหกรรมและสีเคมีภัณฑ์'),
+('LOC-PLANT3-SAMUT', N'โรงงานสมุทรปราการ (Plant 3 Samut Prakan)', N'โรงงานผลิตเรซิ่นและผสมสีทาอาคาร'),
+('LOC-AWS-SINGAPORE', N'AWS Cloud Datacenter (Singapore Region)', N'ศูนย์ข้อมูลหลักบน Cloud AWS สภาพแวดล้อมระบบ SAP ECC6');
+
+INSERT INTO dbo.Master_Department (DepartmentCode, DepartmentName, ManagerName)
+VALUES
+('IT', N'Information Technology (ไอที)', N'สมชาย ใจดี'),
+('QA_QC', N'Quality Assurance & QC (ประกันคุณภาพสี)', N'กัญญา รักไทย'),
+('PROD_PAINT', N'Paint Manufacturing & Production (ฝ่ายผลิตสี)', N'อนันต์ มั่งคั่ง'),
+('SERVICE', N'Technical Coating Service (ฝ่ายบริการเทคนิคพ่นสี)', N'วิชัย บริการ'),
+('SCM', N'Supply Chain & Warehouse (คลังสินค้าและจัดส่ง)', N'สมศักดิ์ ขนส่ง'),
+('FIN_ACC', N'Finance & Accounting (การเงินและบัญชี)', N'วิภา บัญชี');
+
+INSERT INTO dbo.Master_Process (ProcessCode, ProcessName, DepartmentID, Description)
+VALUES
+('PROC-SAP', N'SAP ECC6 Cloud ERP Operations', 1, N'ระบบงานหลักสำหรับการวางแผนผลิตสี การขาย จัดซื้อ และบัญชี'),
+('PROC-TINT', N'Automated Paint Tinting & Mixing Process', 3, N'กระบวนการผสมสีอัตโนมัติเชื่อมต่อสั่งการจากระบบ IT/OT'),
+('PROC-PATCH', N'BigFix Endpoint Patching & EDR Deployment', 1, N'การอัปเดตแพตช์ความปลอดภัยเครื่อง PC/Server ในทุก Plant'),
+('PROC-SOC', N'Proficio 24/7 Managed SOC Incident Monitoring', 1, N'การเฝ้าระวังภัยคุกคามไซเบอร์ตลอด 24 ชั่วโมง'),
+('PROC-GLPI', N'GLPI IT Asset & Service Desk Operation', 1, N'ระบบบริหารจัดการทรัพย์สิน IT และแจ้งซ่อมบริการ');
+
+INSERT INTO dbo.Master_Asset (AssetCode, AssetName, AssetType, OwnerName, Criticality)
+VALUES
+('AST-AWS-SAP-APP', N'AWS SAP ECC6 ERP Application Cluster', N'Cloud AWS Server', N'สมชาย ใจดี', N'Critical'),
+('AST-AWS-SAP-DB', N'AWS SAP ECC6 Oracle Database Server', N'Cloud AWS Database', N'สมชาย ใจดี', N'Critical'),
+('AST-DC-PLANT1', N'Plant 1 Chonburi Local Active Directory Domain Controller', N'Local Windows Server', N'สมชาย ใจดี', N'High'),
+('AST-PLC-MIX01', N'Automated Color Tinting Machine PLC Gateway (Plant 1)', N'OT / Industrial Control', N'อนันต์ มั่งคั่ง', N'Critical'),
+('AST-SENTINEL-01', N'SentinelOne EDR & Proficio SIEM Gateway Collector', N'Security Appliance', N'สมชาย ใจดี', N'High'),
+('AST-BIGFIX-01', N'HCL BigFix Endpoint Patch Management Server', N'Management Server', N'สมชาย ใจดี', N'High');
+
+-- ============================================================================
+-- 2. SEED USERS (DEPENDS ON MASTER_DEPARTMENT)
 -- ============================================================================
 INSERT INTO dbo.[User] (Username, FullName, Email, Role, DepartmentID, CreatedBy)
 VALUES 
@@ -33,7 +77,7 @@ VALUES
 ('ot.eng', N'อนันต์ มั่งคั่ง (Plant OT & Automation Engineer)', 'anan.m@paint-coatings.co.th', 'User', 3, 'SYSTEM');
 
 -- ============================================================================
--- 2. SEED STANDARDS & CLAUSES
+-- 3. SEED STANDARDS & CLAUSES
 -- ============================================================================
 INSERT INTO dbo.Master_Standard (StandardCode, StandardName, Description)
 VALUES
@@ -71,7 +115,7 @@ VALUES
 (4, 'A.8.13', N'Information Backup', N'การสำรองข้อมูล SAP ECC6 และ File Share พร้อมการทดสอบกู้คืนข้อมูลอย่างสม่ำเสมอ');
 
 -- ============================================================================
--- 3. SEED RISK CATEGORIES
+-- 4. SEED RISK CATEGORIES
 -- ============================================================================
 INSERT INTO dbo.Master_RiskCategory (CategoryCode, CategoryName, Description)
 VALUES
@@ -82,53 +126,6 @@ VALUES
 ('BACKUP_DR', N'Backup & Business Continuity (BCP/DR)', N'การสำรองข้อมูล SAP ECC6, File Server ในแต่ละ Plant และแผนกู้คืนภัยพิบัติ'),
 ('COMPLIANCE', N'Compliance & Standards Audit', N'ความเสี่ยงการไม่สอดคล้องกับข้อกำหนด IATF 16949, ISO 9001, JAMA/JAPIA, ISO 27001'),
 ('SUPPLIER', N'Third Party & Service Provider', N'ความเสี่ยงจากผู้ให้บริการซ่อมบำรุง, Cloud AWS, Managed SOC Proficio และ Vendor');
-
--- ============================================================================
--- 4. SEED DEPARTMENTS & PROCESSES
--- ============================================================================
-INSERT INTO dbo.Master_Department (DepartmentCode, DepartmentName, ManagerName)
-VALUES
-('IT', N'Information Technology (ไอที)', N'สมชาย ใจดี'),
-('QA_QC', N'Quality Assurance & QC (ประกันคุณภาพสี)', N'กัญญา รักไทย'),
-('PROD_PAINT', N'Paint Manufacturing & Production (ฝ่ายผลิตสี)', N'อนันต์ มั่งคั่ง'),
-('SERVICE', N'Technical Coating Service (ฝ่ายบริการเทคนิคพ่นสี)', N'วิชัย บริการ'),
-('SCM', N'Supply Chain & Warehouse (คลังสินค้าและจัดส่ง)', N'สมศักดิ์ ขนส่ง'),
-('FIN_ACC', N'Finance & Accounting (การเงินและบัญชี)', N'วิภา บัญชี');
-
-INSERT INTO dbo.Master_Process (ProcessCode, ProcessName, DepartmentID, Description)
-VALUES
-('PROC-SAP', N'SAP ECC6 Cloud ERP Operations', 1, N'ระบบงานหลักสำหรับการวางแผนผลิตสี การขาย จัดซื้อ และบัญชี'),
-('PROC-TINT', N'Automated Paint Tinting & Mixing Process', 3, N'กระบวนการผสมสีอัตโนมัติเชื่อมต่อสั่งการจากระบบ IT/OT'),
-('PROC-PATCH', N'BigFix Endpoint Patching & EDR Deployment', 1, N'การอัปเดตแพตช์ความปลอดภัยเครื่อง PC/Server ในทุก Plant'),
-('PROC-SOC', N'Proficio 24/7 Managed SOC Incident Monitoring', 1, N'การเฝ้าระวังภัยคุกคามไซเบอร์ตลอด 24 ชั่วโมง'),
-('PROC-GLPI', N'GLPI IT Asset & Service Desk Operation', 1, N'ระบบบริหารจัดการทรัพย์สิน IT และแจ้งซ่อมบริการ');
-
--- ============================================================================
--- 5. SEED ASSETS, LOCATIONS, BUs
--- ============================================================================
-INSERT INTO dbo.Master_Asset (AssetCode, AssetName, AssetType, OwnerName, Criticality)
-VALUES
-('AST-AWS-SAP-APP', N'AWS SAP ECC6 ERP Application Cluster', N'Cloud AWS Server', N'สมชาย ใจดี', N'Critical'),
-('AST-AWS-SAP-DB', N'AWS SAP ECC6 Oracle Database Server', N'Cloud AWS Database', N'สมชาย ใจดี', N'Critical'),
-('AST-DC-PLANT1', N'Plant 1 Chonburi Local Active Directory Domain Controller', N'Local Windows Server', N'สมชาย ใจดี', N'High'),
-('AST-PLC-MIX01', N'Automated Color Tinting Machine PLC Gateway (Plant 1)', N'OT / Industrial Control', N'อนันต์ มั่งคั่ง', N'Critical'),
-('AST-SENTINEL-01', N'SentinelOne EDR & Proficio SIEM Gateway Collector', N'Security Appliance', N'สมชาย ใจดี', N'High'),
-('AST-BIGFIX-01', N'HCL BigFix Endpoint Patch Management Server', N'Management Server', N'สมชาย ใจดี', N'High');
-
-INSERT INTO dbo.Master_Location (LocationCode, LocationName, Description)
-VALUES
-('LOC-HQ-BKK', N'สำนักงานใหญ่ กรุงเทพฯ (HQ Bangkok)', N'ศูนย์บริหารจัดการและทีม IT หลัก'),
-('LOC-PLANT1-CHON', N'โรงงานชลบุรี (Plant 1 Chonburi)', N'โรงงานผลิตสีพ่นรถยนต์ OEM (IATF 16949 / JAMA Requirement)'),
-('LOC-PLANT2-RAYONG', N'โรงงานระยอง (Plant 2 Rayong)', N'โรงงานผลิตสีอุตสาหกรรมและสีเคมีภัณฑ์'),
-('LOC-PLANT3-SAMUT', N'โรงงานสมุทรปราการ (Plant 3 Samut Prakan)', N'โรงงานผลิตเรซิ่นและผสมสีทาอาคาร'),
-('LOC-AWS-SINGAPORE', N'AWS Cloud Datacenter (Singapore Region)', N'ศูนย์ข้อมูลหลักบน Cloud AWS สภาพแวดล้อมระบบ SAP ECC6');
-
-INSERT INTO dbo.Master_BusinessUnit (BUCode, BUName, Description)
-VALUES
-('BU-AUTO-COAT', N'Automotive & OEM Coatings BU', N'กลุ่มธุรกิจสีพ่นรถยนต์ OEM ป้อนโรงงานประกอบรถยนต์ญี่ปุ่น'),
-('BU-IND-PAINT', N'Industrial & Chemical Coatings BU', N'กลุ่มธุรกิจสีอุตสาหกรรม สีทาเครื่องจักร และสารเคมีเคลือบผิว'),
-('BU-DECO-PAINT', N'Decorative Paint BU', N'กลุ่มธุรกิจสีทาอาคารและสีตกแต่งทั่วไป'),
-('BU-COATING-SERV', N'Surface Coating Service Division', N'กลุ่มธุรกิจบริการพ่นสีและเตรียมผิวชิ้นงานอุตสาหกรรม');
 
 -- ============================================================================
 -- 6. SEED EVALUATION CRITERIA WITH DETAILED THAI DEFINITIONS
