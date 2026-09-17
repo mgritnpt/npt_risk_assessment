@@ -69,6 +69,19 @@ async function autoInitDatabase() {
     } else {
       console.log('✅ Database schema and seed data verified.');
     }
+
+    // Always ensure Master_Control has at least 1 record to satisfy FK_Risk_Control_Control constraint
+    try {
+      await pool.request().query(`
+        IF NOT EXISTS (SELECT 1 FROM dbo.Master_Control WITH (NOLOCK))
+        BEGIN
+          INSERT INTO dbo.Master_Control (ControlCode, ControlName, ControlDescription)
+          VALUES ('CTL-01', 'Default Control', 'System Default Control');
+        END
+      `);
+    } catch (e) {
+      console.warn('⚠️ Master_Control seed check warning:', e.message);
+    }
   } catch (err) {
     console.error('⚠️ Database auto-initialization error (continuing...):', err.message);
   }

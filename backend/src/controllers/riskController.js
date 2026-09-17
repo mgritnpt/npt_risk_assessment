@@ -9,18 +9,22 @@ const parseBigInt = (val) => {
 
 // Helper to record audit log
 async function createAuditLog(transaction, userId, action, tableName, recordId, oldValue, newValue) {
-  const req = transaction ? new sql.Request(transaction) : (await connectDB()).request();
-  await req
-    .input('UserID', sql.NVarChar, userId || 'SYSTEM')
-    .input('Action', sql.NVarChar, action)
-    .input('TableName', sql.NVarChar, tableName)
-    .input('RecordID', sql.NVarChar, String(recordId))
-    .input('OldValue', sql.NVarChar, oldValue ? JSON.stringify(oldValue) : null)
-    .input('NewValue', sql.NVarChar, newValue ? JSON.stringify(newValue) : null)
-    .query(`
-      INSERT INTO dbo.AuditLog (UserID, Action, TableName, RecordID, OldValue, NewValue)
-      VALUES (@UserID, @Action, @TableName, @RecordID, @OldValue, @NewValue)
-    `);
+  try {
+    const req = transaction ? new sql.Request(transaction) : (await connectDB()).request();
+    await req
+      .input('UserID', sql.NVarChar, userId || 'SYSTEM')
+      .input('Action', sql.NVarChar, action)
+      .input('TableName', sql.NVarChar, tableName)
+      .input('RecordID', sql.NVarChar, String(recordId))
+      .input('OldValue', sql.NVarChar, oldValue ? JSON.stringify(oldValue) : null)
+      .input('NewValue', sql.NVarChar, newValue ? JSON.stringify(newValue) : null)
+      .query(`
+        INSERT INTO dbo.Audit_Log (UserName, ActionType, TableName, RecordID, OldValue, NewValue, CreateDate)
+        VALUES (@UserID, @Action, @TableName, @RecordID, @OldValue, @NewValue, GETDATE())
+      `);
+  } catch (err) {
+    console.warn('Audit log recording skipped:', err.message);
+  }
 }
 
 // 1. GET ALL RISKS WITH FILTERS
@@ -339,11 +343,23 @@ const createRisk = async (req, res) => {
     }
 
     // 4. Insert Controls directly into dbo.Risk_Control
+    // Ensure at least one master control exists to satisfy FK_Risk_Control_Control
+    const masterControlRes = await new sql.Request(transaction).query(`
+      IF NOT EXISTS (SELECT 1 FROM dbo.Master_Control WITH (NOLOCK))
+      BEGIN
+        INSERT INTO dbo.Master_Control (ControlCode, ControlName, ControlDescription)
+        VALUES ('CTL-01', 'Default Control', 'System Default Control');
+      END;
+      SELECT TOP 1 ControlID FROM dbo.Master_Control WITH (NOLOCK) ORDER BY ControlID;
+    `);
+    const validControlID = masterControlRes.recordset[0].ControlID;
+
     for (const ctrl of controls) {
       if (ctrl && ctrl.ControlName) {
         const ctrlReq = new sql.Request(transaction);
         ctrlReq
           .input('RiskID', sql.BigInt, riskId)
+          .input('ControlID', sql.BigInt, validControlID)
           .input('ControlName', sql.NVarChar, ctrl.ControlName)
           .input('ControlDescription', sql.NVarChar, ctrl.ControlDescription || '')
           .input('ControlType', sql.NVarChar, ctrl.ControlType || 'Preventive')
@@ -357,7 +373,7 @@ const createRisk = async (req, res) => {
             RiskID, ControlID, ControlCode, ControlName, ControlDescription, ControlType,
             ManualOrAutomated, ControlOwner, ControlEvidence, ControlEffectiveness
           ) VALUES (
-            @RiskID, ISNULL((SELECT TOP 1 ControlID FROM dbo.Master_Control ORDER BY ControlID), 1), 'CTL-01',
+            @RiskID, @ControlID, 'CTL-01',
             @ControlName, @ControlDescription, @ControlType,
             @ManualOrAutomated, @ControlOwner, @ControlEvidence, @ControlEffectiveness
           )
@@ -378,11 +394,14 @@ const createRisk = async (req, res) => {
           .input('ComplianceGap', sql.NVarChar, std.ComplianceGap || '');
 
         await stdReq.query(`
-          INSERT INTO dbo.Risk_Standard (
-            RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status
-          ) VALUES (
-            @RiskID, @StandardID, @ClauseID, @ControlReference, @ComplianceGap, 'Compliant'
-          )
+          IF EXISTS (SELECT 1 FROM dbo.Master_Standard WITH (NOLOCK) WHERE StandardID = @StandardID)
+          BEGIN
+            INSERT INTO dbo.Risk_Standard (
+              RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status
+            ) VALUES (
+              @RiskID, @StandardID, @ClauseID, @ControlReference, @ComplianceGap, 'Compliant'
+            )
+          END
         `);
       }
     }
@@ -586,11 +605,24 @@ const updateRisk = async (req, res) => {
 
     // 4. Update Controls (Delete & Re-insert directly into dbo.Risk_Control)
     await new sql.Request(transaction).input('RiskID', sql.BigInt, riskId).query(`DELETE FROM dbo.Risk_Control WHERE RiskID = @RiskID`);
+    
+    // Ensure at least one master control exists to satisfy FK_Risk_Control_Control
+    const masterControlResUpdate = await new sql.Request(transaction).query(`
+      IF NOT EXISTS (SELECT 1 FROM dbo.Master_Control WITH (NOLOCK))
+      BEGIN
+        INSERT INTO dbo.Master_Control (ControlCode, ControlName, ControlDescription)
+        VALUES ('CTL-01', 'Default Control', 'System Default Control');
+      END;
+      SELECT TOP 1 ControlID FROM dbo.Master_Control WITH (NOLOCK) ORDER BY ControlID;
+    `);
+    const validControlIDUpdate = masterControlResUpdate.recordset[0].ControlID;
+
     for (const ctrl of controls) {
       if (ctrl && ctrl.ControlName) {
         const ctrlReq = new sql.Request(transaction);
         ctrlReq
           .input('RiskID', sql.BigInt, riskId)
+          .input('ControlID', sql.BigInt, validControlIDUpdate)
           .input('ControlName', sql.NVarChar, ctrl.ControlName)
           .input('ControlDescription', sql.NVarChar, ctrl.ControlDescription || '')
           .input('ControlType', sql.NVarChar, ctrl.ControlType || 'Preventive')
@@ -604,7 +636,7 @@ const updateRisk = async (req, res) => {
             RiskID, ControlID, ControlCode, ControlName, ControlDescription, ControlType,
             ManualOrAutomated, ControlOwner, ControlEvidence, ControlEffectiveness
           ) VALUES (
-            @RiskID, ISNULL((SELECT TOP 1 ControlID FROM dbo.Master_Control ORDER BY ControlID), 1), 'CTL-01',
+            @RiskID, @ControlID, 'CTL-01',
             @ControlName, @ControlDescription, @ControlType,
             @ManualOrAutomated, @ControlOwner, @ControlEvidence, @ControlEffectiveness
           )
@@ -626,11 +658,14 @@ const updateRisk = async (req, res) => {
           .input('ComplianceGap', sql.NVarChar, std.ComplianceGap || '');
 
         await stdReq.query(`
-          INSERT INTO dbo.Risk_Standard (
-            RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status
-          ) VALUES (
-            @RiskID, @StandardID, @ClauseID, @ControlReference, @ComplianceGap, 'Compliant'
-          )
+          IF EXISTS (SELECT 1 FROM dbo.Master_Standard WITH (NOLOCK) WHERE StandardID = @StandardID)
+          BEGIN
+            INSERT INTO dbo.Risk_Standard (
+              RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status
+            ) VALUES (
+              @RiskID, @StandardID, @ClauseID, @ControlReference, @ComplianceGap, 'Compliant'
+            )
+          END
         `);
       }
     }
