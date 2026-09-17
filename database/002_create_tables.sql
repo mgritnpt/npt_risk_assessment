@@ -1727,6 +1727,31 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID('dbo.TR_RiskAssessment_InsteadOfUpdate', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskAssessment_InsteadOfUpdate;
+GO
+CREATE TRIGGER dbo.TR_RiskAssessment_InsteadOfUpdate
+ON dbo.RiskAssessment
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE a
+    SET 
+        a.LikelihoodScore = ISNULL(i.Likelihood, a.LikelihoodScore),
+        a.ImpactScore = ISNULL(i.Impact, a.ImpactScore),
+        a.ConfidentialityImpact = ISNULL(i.ConfidentialityImpact, a.ConfidentialityImpact),
+        a.IntegrityImpact = ISNULL(i.IntegrityImpact, a.IntegrityImpact),
+        a.AvailabilityImpact = ISNULL(i.AvailabilityImpact, a.AvailabilityImpact),
+        a.QualityImpact = ISNULL(i.QualityImpact, a.QualityImpact),
+        a.FinancialImpact = ISNULL(i.FinancialImpact, a.FinancialImpact),
+        a.RiskScore = ISNULL(i.RiskScore, a.RiskScore),
+        a.RiskLevel = ISNULL(i.RiskLevel, a.RiskLevel),
+        a.UpdatedDate = GETDATE()
+    FROM dbo.Risk_Assessment a
+    JOIN inserted i ON a.AssessmentID = i.AssessmentID;
+END;
+GO
+
 IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'UX_Risk_Assessment_Current' AND object_id = OBJECT_ID('dbo.Risk_Assessment'))
     DROP INDEX UX_Risk_Assessment_Current ON dbo.Risk_Assessment;
 GO

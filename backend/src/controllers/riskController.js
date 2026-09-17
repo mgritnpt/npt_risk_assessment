@@ -1,5 +1,12 @@
 const { connectDB, sql } = require('../config/db');
 
+// Helper for safe BigInt parsing (prevents "0", "", null, undefined, false, NaN from throwing SQL errors)
+const parseBigInt = (val) => {
+  if (val === null || val === undefined || val === '' || val === 0 || val === '0' || val === false) return null;
+  const num = parseInt(val, 10);
+  return isNaN(num) || num <= 0 ? null : num;
+};
+
 // Helper to record audit log
 async function createAuditLog(transaction, userId, action, tableName, recordId, oldValue, newValue) {
   const req = transaction ? new sql.Request(transaction) : (await connectDB()).request();
@@ -204,13 +211,13 @@ const createRisk = async (req, res) => {
     await transaction.begin();
 
     const {
-      header,
-      inherentAssessment,
-      residualAssessment,
+      header = {},
+      inherentAssessment = null,
+      residualAssessment = null,
       controls = [],
       standards = [],
       actions = [],
-      acceptance = {}
+      acceptance = null
     } = req.body;
 
     // Generate RiskNo if not provided (e.g. IT-R-2026-003)
@@ -226,21 +233,21 @@ const createRisk = async (req, res) => {
     const headerReq = new sql.Request(transaction);
     headerReq
       .input('RiskNo', sql.NVarChar, riskNo)
-      .input('RiskTitle', sql.NVarChar, header.RiskTitle)
+      .input('RiskTitle', sql.NVarChar, header.RiskTitle || '')
       .input('RiskDescription', sql.NVarChar, header.RiskDescription || '')
       .input('AssessmentDate', sql.Date, header.AssessmentDate || new Date())
       .input('ReviewDate', sql.Date, header.ReviewDate || null)
       .input('AssessmentType', sql.NVarChar, header.AssessmentType || 'Initial')
       .input('RiskType', sql.NVarChar, header.RiskType || 'IT Risk')
-      .input('CategoryID', sql.BigInt, header.CategoryID ? parseInt(header.CategoryID, 10) : null)
-      .input('DepartmentID', sql.BigInt, header.DepartmentID ? parseInt(header.DepartmentID, 10) : null)
-      .input('ProcessID', sql.BigInt, header.ProcessID ? parseInt(header.ProcessID, 10) : null)
-      .input('LocationID', sql.BigInt, header.LocationID ? parseInt(header.LocationID, 10) : null)
-      .input('BUID', sql.BigInt, header.BUID ? parseInt(header.BUID, 10) : null)
-      .input('AssetID', sql.BigInt, header.AssetID ? parseInt(header.AssetID, 10) : null)
-      .input('RiskOwnerID', sql.BigInt, header.RiskOwnerID ? parseInt(header.RiskOwnerID, 10) : null)
-      .input('AssessorID', sql.BigInt, header.AssessorID ? parseInt(header.AssessorID, 10) : null)
-      .input('ApproverID', sql.BigInt, header.ApproverID ? parseInt(header.ApproverID, 10) : null)
+      .input('CategoryID', sql.BigInt, parseBigInt(header.CategoryID))
+      .input('DepartmentID', sql.BigInt, parseBigInt(header.DepartmentID))
+      .input('ProcessID', sql.BigInt, parseBigInt(header.ProcessID))
+      .input('LocationID', sql.BigInt, parseBigInt(header.LocationID))
+      .input('BUID', sql.BigInt, parseBigInt(header.BUID))
+      .input('AssetID', sql.BigInt, parseBigInt(header.AssetID))
+      .input('RiskOwnerID', sql.BigInt, parseBigInt(header.RiskOwnerID))
+      .input('AssessorID', sql.BigInt, parseBigInt(header.AssessorID))
+      .input('ApproverID', sql.BigInt, parseBigInt(header.ApproverID))
       .input('Threat', sql.NVarChar, header.Threat || '')
       .input('Vulnerability', sql.NVarChar, header.Vulnerability || '')
       .input('RiskCause', sql.NVarChar, header.RiskCause || '')
@@ -337,76 +344,83 @@ const createRisk = async (req, res) => {
 
     // 4. Insert Controls
     for (const ctrl of controls) {
-      const ctrlReq = new sql.Request(transaction);
-      ctrlReq
-        .input('RiskID', sql.BigInt, riskId)
-        .input('ControlName', sql.NVarChar, ctrl.ControlName)
-        .input('ControlDescription', sql.NVarChar, ctrl.ControlDescription || '')
-        .input('ControlType', sql.NVarChar, ctrl.ControlType || 'Preventive')
-        .input('ManualOrAutomated', sql.NVarChar, ctrl.ManualOrAutomated || 'Automated')
-        .input('ControlOwner', sql.NVarChar, ctrl.ControlOwner || '')
-        .input('ControlEvidence', sql.NVarChar, ctrl.ControlEvidence || '')
-        .input('ControlEffectiveness', sql.NVarChar, ctrl.ControlEffectiveness || 'Effective');
+      if (ctrl && ctrl.ControlName) {
+        const ctrlReq = new sql.Request(transaction);
+        ctrlReq
+          .input('RiskID', sql.BigInt, riskId)
+          .input('ControlName', sql.NVarChar, ctrl.ControlName)
+          .input('ControlDescription', sql.NVarChar, ctrl.ControlDescription || '')
+          .input('ControlType', sql.NVarChar, ctrl.ControlType || 'Preventive')
+          .input('ManualOrAutomated', sql.NVarChar, ctrl.ManualOrAutomated || 'Automated')
+          .input('ControlOwner', sql.NVarChar, ctrl.ControlOwner || '')
+          .input('ControlEvidence', sql.NVarChar, ctrl.ControlEvidence || '')
+          .input('ControlEffectiveness', sql.NVarChar, ctrl.ControlEffectiveness || 'Effective');
 
-      await ctrlReq.query(`
-        INSERT INTO dbo.RiskControl (
-          RiskID, ControlName, ControlDescription, ControlType, ManualOrAutomated, ControlOwner, ControlEvidence, ControlEffectiveness
-        ) VALUES (
-          @RiskID, @ControlName, @ControlDescription, @ControlType, @ManualOrAutomated, @ControlOwner, @ControlEvidence, @ControlEffectiveness
-        )
-      `);
+        await ctrlReq.query(`
+          INSERT INTO dbo.RiskControl (
+            RiskID, ControlName, ControlDescription, ControlType, ManualOrAutomated, ControlOwner, ControlEvidence, ControlEffectiveness
+          ) VALUES (
+            @RiskID, @ControlName, @ControlDescription, @ControlType, @ManualOrAutomated, @ControlOwner, @ControlEvidence, @ControlEffectiveness
+          )
+        `);
+      }
     }
 
     // 5. Insert Standards Mapped
     for (const std of standards) {
-      const stdReq = new sql.Request(transaction);
-      stdReq
-        .input('RiskID', sql.BigInt, riskId)
-        .input('StandardID', sql.BigInt, std.StandardID ? parseInt(std.StandardID, 10) : null)
-        .input('ClauseID', sql.BigInt, std.ClauseID ? parseInt(std.ClauseID, 10) : null)
-        .input('ControlReference', sql.NVarChar, std.ControlReference || '')
-        .input('ComplianceGap', sql.NVarChar, std.ComplianceGap || '');
+      const sId = parseBigInt(std.StandardID);
+      if (sId) {
+        const stdReq = new sql.Request(transaction);
+        stdReq
+          .input('RiskID', sql.BigInt, riskId)
+          .input('StandardID', sql.BigInt, sId)
+          .input('ClauseID', sql.BigInt, parseBigInt(std.ClauseID))
+          .input('ControlReference', sql.NVarChar, std.ControlReference || '')
+          .input('ComplianceGap', sql.NVarChar, std.ComplianceGap || '');
 
-      await stdReq.query(`
-        INSERT INTO dbo.RiskStandardMapping (
-          RiskID, StandardID, ClauseID, ControlReference, ComplianceGap
-        ) VALUES (
-          @RiskID, @StandardID, @ClauseID, @ControlReference, @ComplianceGap
-        )
-      `);
+        await stdReq.query(`
+          INSERT INTO dbo.RiskStandardMapping (
+            RiskID, StandardID, ClauseID, ControlReference, ComplianceGap
+          ) VALUES (
+            @RiskID, @StandardID, @ClauseID, @ControlReference, @ComplianceGap
+          )
+        `);
+      }
     }
 
     // 6. Insert Treatment Actions
     for (const act of actions) {
-      const actReq = new sql.Request(transaction);
-      actReq
-        .input('RiskID', sql.BigInt, riskId)
-        .input('TreatmentStrategy', sql.NVarChar, act.TreatmentStrategy || 'Reduce')
-        .input('TreatmentAction', sql.NVarChar, act.TreatmentAction)
-        .input('ActionOwner', sql.NVarChar, act.ActionOwner || '')
-        .input('TargetDate', sql.Date, act.TargetDate || null)
-        .input('Priority', sql.NVarChar, act.Priority || 'Medium')
-        .input('RequiredBudget', sql.Decimal(18, 2), act.RequiredBudget || 0)
-        .input('ProgressPercent', sql.Int, act.ProgressPercent || 0)
-        .input('Status', sql.NVarChar, act.Status || 'Open');
+      if (act && act.TreatmentAction) {
+        const actReq = new sql.Request(transaction);
+        actReq
+          .input('RiskID', sql.BigInt, riskId)
+          .input('TreatmentStrategy', sql.NVarChar, act.TreatmentStrategy || 'Reduce')
+          .input('TreatmentAction', sql.NVarChar, act.TreatmentAction)
+          .input('ActionOwner', sql.NVarChar, act.ActionOwner || '')
+          .input('TargetDate', sql.Date, act.TargetDate && act.TargetDate !== '' ? act.TargetDate : null)
+          .input('Priority', sql.NVarChar, act.Priority || 'Medium')
+          .input('RequiredBudget', sql.Decimal(18, 2), act.RequiredBudget && !isNaN(parseFloat(act.RequiredBudget)) ? parseFloat(act.RequiredBudget) : 0)
+          .input('ProgressPercent', sql.Int, act.ProgressPercent && !isNaN(parseInt(act.ProgressPercent, 10)) ? parseInt(act.ProgressPercent, 10) : 0)
+          .input('Status', sql.NVarChar, act.Status || 'Open');
 
-      await actReq.query(`
-        INSERT INTO dbo.RiskTreatmentAction (
-          RiskID, TreatmentStrategy, TreatmentAction, ActionOwner, TargetDate, Priority, RequiredBudget, ProgressPercent, Status
-        ) VALUES (
-          @RiskID, @TreatmentStrategy, @TreatmentAction, @ActionOwner, @TargetDate, @Priority, @RequiredBudget, @ProgressPercent, @Status
-        )
-      `);
+        await actReq.query(`
+          INSERT INTO dbo.RiskTreatmentAction (
+            RiskID, TreatmentStrategy, TreatmentAction, ActionOwner, TargetDate, Priority, RequiredBudget, ProgressPercent, Status
+          ) VALUES (
+            @RiskID, @TreatmentStrategy, @TreatmentAction, @ActionOwner, @TargetDate, @Priority, @RequiredBudget, @ProgressPercent, @Status
+          )
+        `);
+      }
     }
 
     // 7. Insert Risk Acceptance
-    if (acceptance) {
+    if (acceptance && (acceptance.AcceptedBy || acceptance.IsRequired || acceptance.AcceptanceReason)) {
       const accReq = new sql.Request(transaction);
       accReq
         .input('RiskID', sql.BigInt, riskId)
         .input('IsRequired', sql.Bit, acceptance.IsRequired ? 1 : 0)
         .input('AcceptedBy', sql.NVarChar, acceptance.AcceptedBy || '')
-        .input('AcceptanceDate', sql.Date, acceptance.AcceptanceDate || new Date())
+        .input('AcceptanceDate', sql.Date, acceptance.AcceptanceDate && acceptance.AcceptanceDate !== '' ? acceptance.AcceptanceDate : new Date())
         .input('AcceptanceReason', sql.NVarChar, acceptance.AcceptanceReason || '');
 
       await accReq.query(`
@@ -441,30 +455,32 @@ const updateRisk = async (req, res) => {
     await transaction.begin();
 
     const {
-      header,
-      inherentAssessment,
-      residualAssessment,
+      header = {},
+      inherentAssessment = null,
+      residualAssessment = null,
       controls = [],
       standards = [],
       actions = [],
-      acceptance = {}
+      acceptance = null
     } = req.body;
+
+    const riskId = parseBigInt(id);
 
     // 1. Update Header
     const headerReq = new sql.Request(transaction);
     headerReq
-      .input('id', sql.BigInt, id)
-      .input('RiskTitle', sql.NVarChar, header.RiskTitle)
+      .input('id', sql.BigInt, riskId)
+      .input('RiskTitle', sql.NVarChar, header.RiskTitle || '')
       .input('RiskDescription', sql.NVarChar, header.RiskDescription || '')
-      .input('CategoryID', sql.BigInt, header.CategoryID ? parseInt(header.CategoryID, 10) : null)
-      .input('DepartmentID', sql.BigInt, header.DepartmentID ? parseInt(header.DepartmentID, 10) : null)
-      .input('ProcessID', sql.BigInt, header.ProcessID ? parseInt(header.ProcessID, 10) : null)
-      .input('LocationID', sql.BigInt, header.LocationID ? parseInt(header.LocationID, 10) : null)
-      .input('BUID', sql.BigInt, header.BUID ? parseInt(header.BUID, 10) : null)
-      .input('AssetID', sql.BigInt, header.AssetID ? parseInt(header.AssetID, 10) : null)
-      .input('RiskOwnerID', sql.BigInt, header.RiskOwnerID ? parseInt(header.RiskOwnerID, 10) : null)
-      .input('AssessorID', sql.BigInt, header.AssessorID ? parseInt(header.AssessorID, 10) : null)
-      .input('ApproverID', sql.BigInt, header.ApproverID ? parseInt(header.ApproverID, 10) : null)
+      .input('CategoryID', sql.BigInt, parseBigInt(header.CategoryID))
+      .input('DepartmentID', sql.BigInt, parseBigInt(header.DepartmentID))
+      .input('ProcessID', sql.BigInt, parseBigInt(header.ProcessID))
+      .input('LocationID', sql.BigInt, parseBigInt(header.LocationID))
+      .input('BUID', sql.BigInt, parseBigInt(header.BUID))
+      .input('AssetID', sql.BigInt, parseBigInt(header.AssetID))
+      .input('RiskOwnerID', sql.BigInt, parseBigInt(header.RiskOwnerID))
+      .input('AssessorID', sql.BigInt, parseBigInt(header.AssessorID))
+      .input('ApproverID', sql.BigInt, parseBigInt(header.ApproverID))
       .input('Threat', sql.NVarChar, header.Threat || '')
       .input('Vulnerability', sql.NVarChar, header.Vulnerability || '')
       .input('RiskCause', sql.NVarChar, header.RiskCause || '')
@@ -506,7 +522,7 @@ const updateRisk = async (req, res) => {
 
       const inhReq = new sql.Request(transaction);
       inhReq
-        .input('RiskID', sql.BigInt, id)
+        .input('RiskID', sql.BigInt, riskId)
         .input('Likelihood', sql.Int, l)
         .input('Impact', sql.Int, i)
         .input('ConfidentialityImpact', sql.Int, inherentAssessment.ConfidentialityImpact || l)
@@ -518,9 +534,9 @@ const updateRisk = async (req, res) => {
         .input('RiskLevel', sql.NVarChar, level);
 
       await inhReq.query(`
-        IF EXISTS (SELECT 1 FROM dbo.RiskAssessment WHERE RiskID = @RiskID AND AssessmentType = 'INHERENT')
-          UPDATE dbo.RiskAssessment SET
-            Likelihood = @Likelihood, Impact = @Impact,
+        IF EXISTS (SELECT 1 FROM dbo.Risk_Assessment WHERE RiskID = @RiskID AND AssessmentType = 'INHERENT')
+          UPDATE dbo.Risk_Assessment SET
+            LikelihoodScore = @Likelihood, ImpactScore = @Impact,
             ConfidentialityImpact = @ConfidentialityImpact, IntegrityImpact = @IntegrityImpact,
             AvailabilityImpact = @AvailabilityImpact, QualityImpact = @QualityImpact, FinancialImpact = @FinancialImpact,
             RiskScore = @RiskScore, RiskLevel = @RiskLevel, UpdatedDate = GETDATE()
@@ -540,7 +556,7 @@ const updateRisk = async (req, res) => {
 
       const resReq = new sql.Request(transaction);
       resReq
-        .input('RiskID', sql.BigInt, id)
+        .input('RiskID', sql.BigInt, riskId)
         .input('Likelihood', sql.Int, l)
         .input('Impact', sql.Int, i)
         .input('ConfidentialityImpact', sql.Int, residualAssessment.ConfidentialityImpact || l)
@@ -552,9 +568,9 @@ const updateRisk = async (req, res) => {
         .input('RiskLevel', sql.NVarChar, level);
 
       await resReq.query(`
-        IF EXISTS (SELECT 1 FROM dbo.RiskAssessment WHERE RiskID = @RiskID AND AssessmentType = 'RESIDUAL')
-          UPDATE dbo.RiskAssessment SET
-            Likelihood = @Likelihood, Impact = @Impact,
+        IF EXISTS (SELECT 1 FROM dbo.Risk_Assessment WHERE RiskID = @RiskID AND AssessmentType = 'RESIDUAL')
+          UPDATE dbo.Risk_Assessment SET
+            LikelihoodScore = @Likelihood, ImpactScore = @Impact,
             ConfidentialityImpact = @ConfidentialityImpact, IntegrityImpact = @IntegrityImpact,
             AvailabilityImpact = @AvailabilityImpact, QualityImpact = @QualityImpact, FinancialImpact = @FinancialImpact,
             RiskScore = @RiskScore, RiskLevel = @RiskLevel, UpdatedDate = GETDATE()
@@ -566,12 +582,12 @@ const updateRisk = async (req, res) => {
     }
 
     // 4. Update Controls (Delete & Re-insert)
-    await new sql.Request(transaction).input('RiskID', sql.BigInt, id).query(`DELETE FROM dbo.RiskControl WHERE RiskID = @RiskID`);
+    await new sql.Request(transaction).input('RiskID', sql.BigInt, riskId).query(`DELETE FROM dbo.Risk_Control WHERE RiskID = @RiskID`);
     for (const ctrl of controls) {
-      if (ctrl.ControlName) {
+      if (ctrl && ctrl.ControlName) {
         const ctrlReq = new sql.Request(transaction);
         ctrlReq
-          .input('RiskID', sql.BigInt, id)
+          .input('RiskID', sql.BigInt, riskId)
           .input('ControlName', sql.NVarChar, ctrl.ControlName)
           .input('ControlDescription', sql.NVarChar, ctrl.ControlDescription || '')
           .input('ControlType', sql.NVarChar, ctrl.ControlType || 'Preventive')
@@ -591,14 +607,15 @@ const updateRisk = async (req, res) => {
     }
 
     // 5. Update Standards Mapped (Delete & Re-insert)
-    await new sql.Request(transaction).input('RiskID', sql.BigInt, id).query(`DELETE FROM dbo.RiskStandardMapping WHERE RiskID = @RiskID`);
+    await new sql.Request(transaction).input('RiskID', sql.BigInt, riskId).query(`DELETE FROM dbo.Risk_Standard WHERE RiskID = @RiskID`);
     for (const std of standards) {
-      if (std.StandardID) {
+      const sId = parseBigInt(std.StandardID);
+      if (sId) {
         const stdReq = new sql.Request(transaction);
         stdReq
-          .input('RiskID', sql.BigInt, id)
-          .input('StandardID', sql.BigInt, std.StandardID ? parseInt(std.StandardID, 10) : null)
-          .input('ClauseID', sql.BigInt, std.ClauseID ? parseInt(std.ClauseID, 10) : null)
+          .input('RiskID', sql.BigInt, riskId)
+          .input('StandardID', sql.BigInt, sId)
+          .input('ClauseID', sql.BigInt, parseBigInt(std.ClauseID))
           .input('ControlReference', sql.NVarChar, std.ControlReference || '')
           .input('ComplianceGap', sql.NVarChar, std.ComplianceGap || '');
 
@@ -613,19 +630,19 @@ const updateRisk = async (req, res) => {
     }
 
     // 6. Update Treatment Actions (Delete & Re-insert)
-    await new sql.Request(transaction).input('RiskID', sql.BigInt, id).query(`DELETE FROM dbo.RiskTreatmentAction WHERE RiskID = @RiskID`);
+    await new sql.Request(transaction).input('RiskID', sql.BigInt, riskId).query(`DELETE FROM dbo.Risk_Action WHERE RiskID = @RiskID`);
     for (const act of actions) {
-      if (act.TreatmentAction) {
+      if (act && act.TreatmentAction) {
         const actReq = new sql.Request(transaction);
         actReq
-          .input('RiskID', sql.BigInt, id)
+          .input('RiskID', sql.BigInt, riskId)
           .input('TreatmentStrategy', sql.NVarChar, act.TreatmentStrategy || 'Reduce')
           .input('TreatmentAction', sql.NVarChar, act.TreatmentAction)
           .input('ActionOwner', sql.NVarChar, act.ActionOwner || '')
-          .input('TargetDate', sql.Date, act.TargetDate || null)
+          .input('TargetDate', sql.Date, act.TargetDate && act.TargetDate !== '' ? act.TargetDate : null)
           .input('Priority', sql.NVarChar, act.Priority || 'Medium')
-          .input('RequiredBudget', sql.Decimal(18, 2), act.RequiredBudget || 0)
-          .input('ProgressPercent', sql.Int, act.ProgressPercent || 0)
+          .input('RequiredBudget', sql.Decimal(18, 2), act.RequiredBudget && !isNaN(parseFloat(act.RequiredBudget)) ? parseFloat(act.RequiredBudget) : 0)
+          .input('ProgressPercent', sql.Int, act.ProgressPercent && !isNaN(parseInt(act.ProgressPercent, 10)) ? parseInt(act.ProgressPercent, 10) : 0)
           .input('Status', sql.NVarChar, act.Status || 'Open');
 
         await actReq.query(`
@@ -639,14 +656,14 @@ const updateRisk = async (req, res) => {
     }
 
     // 7. Update Acceptance
-    if (acceptance) {
-      await new sql.Request(transaction).input('RiskID', sql.BigInt, id).query(`DELETE FROM dbo.RiskAcceptance WHERE RiskID = @RiskID`);
+    if (acceptance && (acceptance.AcceptedBy || acceptance.IsRequired || acceptance.AcceptanceReason)) {
+      await new sql.Request(transaction).input('RiskID', sql.BigInt, riskId).query(`DELETE FROM dbo.Risk_Acceptance WHERE RiskID = @RiskID`);
       const accReq = new sql.Request(transaction);
       accReq
-        .input('RiskID', sql.BigInt, id)
+        .input('RiskID', sql.BigInt, riskId)
         .input('IsRequired', sql.Bit, acceptance.IsRequired ? 1 : 0)
         .input('AcceptedBy', sql.NVarChar, acceptance.AcceptedBy || '')
-        .input('AcceptanceDate', sql.Date, acceptance.AcceptanceDate || new Date())
+        .input('AcceptanceDate', sql.Date, acceptance.AcceptanceDate && acceptance.AcceptanceDate !== '' ? acceptance.AcceptanceDate : new Date())
         .input('AcceptanceReason', sql.NVarChar, acceptance.AcceptanceReason || '');
 
       await accReq.query(`
@@ -659,7 +676,7 @@ const updateRisk = async (req, res) => {
     }
 
     // 8. Create Audit Log
-    await createAuditLog(transaction, 'SYSTEM', 'UPDATE', 'RiskHeader', id, null, { RiskTitle: header.RiskTitle });
+    await createAuditLog(transaction, 'SYSTEM', 'UPDATE', 'RiskHeader', riskId, null, { RiskTitle: header.RiskTitle });
 
     await transaction.commit();
     res.json({ message: 'Risk updated successfully' });
