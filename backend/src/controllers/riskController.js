@@ -362,8 +362,8 @@ const createRisk = async (req, res) => {
       const stdReq = new sql.Request(transaction);
       stdReq
         .input('RiskID', sql.BigInt, riskId)
-        .input('StandardID', sql.BigInt, std.StandardID)
-        .input('ClauseID', sql.BigInt, std.ClauseID || null)
+        .input('StandardID', sql.BigInt, std.StandardID ? parseInt(std.StandardID, 10) : null)
+        .input('ClauseID', sql.BigInt, std.ClauseID ? parseInt(std.ClauseID, 10) : null)
         .input('ControlReference', sql.NVarChar, std.ControlReference || '')
         .input('ComplianceGap', sql.NVarChar, std.ComplianceGap || '');
 
@@ -597,8 +597,8 @@ const updateRisk = async (req, res) => {
         const stdReq = new sql.Request(transaction);
         stdReq
           .input('RiskID', sql.BigInt, id)
-          .input('StandardID', sql.BigInt, std.StandardID)
-          .input('ClauseID', sql.BigInt, std.ClauseID || null)
+          .input('StandardID', sql.BigInt, std.StandardID ? parseInt(std.StandardID, 10) : null)
+          .input('ClauseID', sql.BigInt, std.ClauseID ? parseInt(std.ClauseID, 10) : null)
           .input('ControlReference', sql.NVarChar, std.ControlReference || '')
           .input('ComplianceGap', sql.NVarChar, std.ComplianceGap || '');
 
