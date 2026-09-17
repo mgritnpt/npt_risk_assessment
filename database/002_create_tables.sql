@@ -1221,6 +1221,7 @@ CREATE TABLE dbo.[Risk_Standard] (
     RiskID BIGINT NOT NULL,
     StandardID BIGINT NOT NULL,
     ClauseID BIGINT NULL,
+    RequirementID BIGINT NULL,
 
     ControlReference NVARCHAR(500) NULL,
     ComplianceStatus NVARCHAR(100) NOT NULL DEFAULT 'Applicable',
@@ -1744,7 +1745,7 @@ BEGIN
     EXEC('
     CREATE VIEW dbo.RiskStandardMapping AS
     SELECT 
-        MappingID, RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status,
+        RiskStandardID AS MappingID, RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status,
         IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
     FROM dbo.Risk_Standard;
     ');
