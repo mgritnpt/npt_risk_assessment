@@ -1,7 +1,7 @@
 import React from 'react';
 import { ShieldAlert, LayoutDashboard, FileSpreadsheet, Database, CheckCircle2 } from 'lucide-react';
 
-export default function Navbar({ currentTab, setCurrentTab, onOpenCreateModal }) {
+export default function Navbar({ currentTab, setCurrentTab, onOpenCreateModal, onOpenExcelModal }) {
   return (
     <header className="bg-slate-900 text-white shadow-md sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -57,8 +57,17 @@ export default function Navbar({ currentTab, setCurrentTab, onOpenCreateModal })
             </button>
           </nav>
 
-          {/* Action Button */}
-          <div>
+          {/* Action Buttons */}
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={onOpenExcelModal}
+              className="inline-flex items-center space-x-1.5 px-3 py-2 border border-slate-700 text-sm font-medium rounded-md text-slate-200 bg-slate-800 hover:bg-slate-700 hover:text-white transition-colors"
+              title="นำเข้าหรือส่งออกข้อมูล Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <span>Excel Import/Export</span>
+            </button>
+
             <button
               onClick={onOpenCreateModal}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"

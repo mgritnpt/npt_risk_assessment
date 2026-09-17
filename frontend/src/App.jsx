@@ -5,6 +5,7 @@ import RiskRegisterView from './components/RiskRegisterView';
 import MasterDataView from './components/MasterDataView';
 import CreateRiskModal from './components/CreateRiskModal';
 import RiskDetailModal from './components/RiskDetailModal';
+import ExcelImportExportModal from './components/ExcelImportExportModal';
 
 import {
   getDashboardSummary,
@@ -41,6 +42,7 @@ export default function App() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingRiskId, setEditingRiskId] = useState(null);
   const [selectedRiskId, setSelectedRiskId] = useState(null);
+  const [isExcelOpen, setIsExcelOpen] = useState(false);
 
   const fetchAllData = async () => {
     setIsLoading(true);
@@ -105,6 +107,7 @@ export default function App() {
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         onOpenCreateModal={handleOpenCreate}
+        onOpenExcelModal={() => setIsExcelOpen(true)}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -160,6 +163,12 @@ export default function App() {
         riskId={selectedRiskId}
         onClose={() => setSelectedRiskId(null)}
         onEditRisk={handleOpenEdit}
+      />
+
+      <ExcelImportExportModal
+        isOpen={isExcelOpen}
+        onClose={() => setIsExcelOpen(false)}
+        onImportSuccess={fetchAllData}
       />
     </div>
   );

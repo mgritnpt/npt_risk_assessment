@@ -233,4 +233,30 @@ export const getAuditLogs = async () => {
   return response.data;
 };
 
+// Excel Operations
+export const exportExcelData = () => {
+  window.open('/api/master/excel-export', '_blank');
+};
+
+export const downloadExcelTemplate = () => {
+  window.open('/api/master/excel-template', '_blank');
+};
+
+export const importExcelData = async (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const fileBase64 = e.target.result;
+        const response = await api.post('/master/excel-import', { fileBase64 });
+        resolve(response.data);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+};
+
 export default api;
