@@ -6,9 +6,6 @@ FROM sys.foreign_keys;
 EXEC sp_executesql @sql;
 GO
 
-USE IT_Apps;
-GO
-
 /* ============================================================================
    ENTERPRISE RISK MANAGEMENT DATABASE
    SQL Server 2022

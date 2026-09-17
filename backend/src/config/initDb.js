@@ -34,13 +34,13 @@ async function autoInitDatabase() {
       const createTablesSql = fs.readFileSync(path.join(sqlDir, '002_create_tables.sql'), 'utf8');
       const seedDataSql = fs.readFileSync(path.join(sqlDir, '003_seed_data.sql'), 'utf8');
 
-      // Helper to split T-SQL by GO
+      // Helper to split T-SQL by GO and strip USE statements
       const runSqlBatches = async (sqlScript) => {
         const batches = sqlScript.split(/^\s*GO\s*$/im);
         for (const batch of batches) {
-          const trimmed = batch.trim();
-          if (trimmed) {
-            await pool.request().query(trimmed);
+          const cleaned = batch.replace(/^\s*USE\s+[^\s;]+;?/im, '').trim();
+          if (cleaned) {
+            await pool.request().query(cleaned);
           }
         }
       };
