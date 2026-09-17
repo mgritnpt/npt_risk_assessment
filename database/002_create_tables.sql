@@ -895,7 +895,12 @@ CREATE TABLE dbo.[Risk_Register] (
     RiskOwnerID BIGINT NULL,
     AssessorID BIGINT NULL,
 
+    ThreatDescription NVARCHAR(3000) NULL,
+    VulnerabilityDescription NVARCHAR(3000) NULL,
+    RootCause NVARCHAR(3000) NULL,
+    ConsequenceDescription NVARCHAR(3000) NULL,
     ExistingCondition NVARCHAR(3000) NULL,
+    PotentialImpact NVARCHAR(3000) NULL,
     RiskStatement NVARCHAR(3000) NULL,
     RiskCause NVARCHAR(3000) NULL,
     RiskConsequence NVARCHAR(3000) NULL,
@@ -1025,13 +1030,22 @@ CREATE TABLE dbo.[Risk_Assessment] (
     ImpactScore INT NOT NULL,
     RiskScore AS (LikelihoodScore * ImpactScore) PERSISTED,
 
+    ConfidentialityImpact INT NULL,
+    IntegrityImpact INT NULL,
+    AvailabilityImpact INT NULL,
+    QualityImpact INT NULL,
+    FinancialImpact INT NULL,
+
     RiskLevelID BIGINT NULL,
+    RiskLevel NVARCHAR(50) NULL,
 
     AssessmentDate DATE NOT NULL DEFAULT GETDATE(),
     AssessorID BIGINT NULL,
 
     AssessmentComment NVARCHAR(3000) NULL,
+    Comments NVARCHAR(3000) NULL,
     IsCurrent BIT NOT NULL DEFAULT 1,
+    IsActive BIT NOT NULL DEFAULT 1,
 
     CreateDate DATETIME2 NOT NULL DEFAULT GETDATE(),
     CreatedBy NVARCHAR(100) NOT NULL DEFAULT 'system',
@@ -1086,12 +1100,18 @@ CREATE TABLE dbo.[Risk_Control] (
     RiskID BIGINT NOT NULL,
     ControlID BIGINT NOT NULL,
 
+    ControlCode NVARCHAR(100) NULL,
+    ControlName NVARCHAR(500) NULL,
     ControlNameOverride NVARCHAR(250) NULL,
     ControlDescription NVARCHAR(3000) NULL,
+    ControlType NVARCHAR(100) NULL,
+    ManualOrAutomated NVARCHAR(100) NULL,
 
     ControlOwner NVARCHAR(200) NULL,
     FrequencyID BIGINT NULL,
+    Frequency NVARCHAR(100) NULL,
     EffectivenessID BIGINT NULL,
+    ControlEffectiveness NVARCHAR(100) NULL,
 
     ImplementationStatus NVARCHAR(100) NOT NULL DEFAULT 'Implemented',
     LastTestDate DATE NULL,
@@ -1133,12 +1153,16 @@ CREATE TABLE dbo.[Risk_Standard] (
     RiskStandardID BIGINT IDENTITY(1,1) PRIMARY KEY,
     RiskID BIGINT NOT NULL,
     StandardID BIGINT NOT NULL,
-    RequirementID BIGINT NOT NULL DEFAULT 0,
+    ClauseID BIGINT NULL,
 
+    ControlReference NVARCHAR(500) NULL,
     ComplianceStatus NVARCHAR(100) NOT NULL DEFAULT 'Applicable',
+    Status NVARCHAR(100) NULL,
     ComplianceGap NVARCHAR(3000) NULL,
     EvidenceReference NVARCHAR(3000) NULL,
     ComplianceComment NVARCHAR(3000) NULL,
+
+    IsActive BIT NOT NULL DEFAULT 1,
 
     CreateDate DATETIME2 NOT NULL DEFAULT GETDATE(),
     CreatedBy NVARCHAR(100) NOT NULL DEFAULT 'system',
@@ -1209,12 +1233,16 @@ CREATE TABLE dbo.[Risk_Action] (
     RiskID BIGINT NOT NULL,
     TreatmentID BIGINT NULL,
 
+    TreatmentStrategy NVARCHAR(200) NULL,
+    TreatmentAction NVARCHAR(3000) NULL,
     ActionNo NVARCHAR(50) NULL,
-    ActionTitle NVARCHAR(500) NOT NULL,
+    ActionTitle NVARCHAR(500) NULL,
     ActionDescription NVARCHAR(3000) NULL,
 
     ActionOwner NVARCHAR(200) NULL,
     PriorityID BIGINT NULL,
+    Priority NVARCHAR(50) NULL,
+    RequiredBudget DECIMAL(18,2) NULL DEFAULT 0,
 
     StartDate DATE NULL,
     TargetDate DATE NULL,
@@ -1222,6 +1250,7 @@ CREATE TABLE dbo.[Risk_Action] (
 
     ProgressPercent INT NOT NULL DEFAULT 0,
     StatusID BIGINT NULL,
+    Status NVARCHAR(100) NULL,
 
     ExpectedResult NVARCHAR(2000) NULL,
     VerificationMethod NVARCHAR(2000) NULL,
@@ -1305,6 +1334,7 @@ CREATE TABLE dbo.[Risk_Acceptance] (
     AcceptanceID BIGINT IDENTITY(1,1) PRIMARY KEY,
     RiskID BIGINT NOT NULL,
 
+    IsRequired BIT NOT NULL DEFAULT 1,
     AcceptanceStatus NVARCHAR(100) NOT NULL DEFAULT 'Pending',
     AcceptedBy NVARCHAR(200) NULL,
     AcceptanceDate DATE NULL,
@@ -1314,8 +1344,10 @@ CREATE TABLE dbo.[Risk_Acceptance] (
 
     ExpiryDate DATE NULL,
     ReviewDate DATE NULL,
+    ReviewFrequency NVARCHAR(100) NULL,
 
     ApprovalComment NVARCHAR(3000) NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
 
     CreateDate DATETIME2 NOT NULL DEFAULT GETDATE(),
     CreatedBy NVARCHAR(100) NOT NULL DEFAULT 'system',
