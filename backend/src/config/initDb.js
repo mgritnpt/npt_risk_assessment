@@ -3,7 +3,7 @@ const path = require('path');
 const { getPool, connectDB } = require('./db');
 
 async function autoInitDatabase() {
-  const dbName = process.env.DB_NAME || 'IT_App_Dev';
+  const dbName = process.env.DB_NAME || 'IT_Apps';
   try {
     // 1. Connect to master database to ensure DB exists
     try {

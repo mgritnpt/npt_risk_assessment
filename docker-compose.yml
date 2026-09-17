@@ -12,7 +12,7 @@ services:
       - DB_PORT=${DB_PORT:-1433}
       - DB_USER=${DB_USER:-it_app_adm}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME:-IT_App_Dev}
+      - DB_NAME=${DB_NAME:-IT_Apps}
       - DB_ENCRYPT=${DB_ENCRYPT:-false}
       - DB_TRUST_SERVER_CERT=${DB_TRUST_SERVER_CERT:-true}
     ports:

@@ -25,7 +25,7 @@ async function runSqlFile(pool, filePath) {
 }
 
 async function initializeDatabase() {
-  const dbName = process.env.DB_NAME || 'IT_App_Dev';
+  const dbName = process.env.DB_NAME || 'IT_Apps';
   console.log(`[DB Init] Starting Database Initialization for ${dbName}...`);
 
   try {
