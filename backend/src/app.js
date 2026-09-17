@@ -29,10 +29,23 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date(), service: 'IT Risk Assessment API' });
 });
 
+// Prevent process crashes on unhandled errors
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err.message, err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 // Start Server immediately so port 5001 is listening right away (prevents Nginx 502 Bad Gateway)
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
 });
+
+// Keep-Alive tuning for Nginx reverse proxy stability
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
 
 // Connect to Database & Auto-Init Schema asynchronously
 connectDB()

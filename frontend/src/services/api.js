@@ -10,7 +10,19 @@ const api = axios.create({
 // Response interceptor to translate HTTP error status codes (502, 503, 504, etc.) into clear Thai error messages
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const config = error.config;
+    // Auto-retry up to 2 times for 502 Bad Gateway / 503 Service Unavailable (transient container restart)
+    if (config && error.response && (error.response.status === 502 || error.response.status === 503)) {
+      config._retryCount = config._retryCount || 0;
+      if (config._retryCount < 2) {
+        config._retryCount += 1;
+        console.warn(`[API Gateway 502 Auto-Retry] Retrying request (${config._retryCount}/2)...`);
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        return api(config);
+      }
+    }
+
     let friendlyMessage = '';
     if (!error.response) {
       friendlyMessage = 'ไม่สามารถเชื่อมต่อระบบหลังบ้านได้ (Network Error / Offline)\nกรุณาตรวจสอบว่าเซิร์ฟเวอร์เปิดอยู่ หรือตรวจสอบการเชื่อมต่อเครือข่ายของคุณ';
