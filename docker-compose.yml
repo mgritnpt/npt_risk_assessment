@@ -1,17 +1,14 @@
-version: '3.8'
-
 services:
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: risk_assessment_backend
     environment:
       - PORT=${PORT:-5001}
       - DB_SERVER=${DB_SERVER:-172.17.21.11}
       - DB_PORT=${DB_PORT:-1433}
       - DB_USER=${DB_USER:-it_app_adm}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PASSWORD=${DB_PASSWORD:-}
       - DB_NAME=${DB_NAME:-IT_Apps}
       - DB_ENCRYPT=${DB_ENCRYPT:-false}
       - DB_TRUST_SERVER_CERT=${DB_TRUST_SERVER_CERT:-true}
@@ -23,7 +20,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: risk_assessment_frontend
     ports:
       - "3000:80"
     depends_on:
