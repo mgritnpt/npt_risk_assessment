@@ -6,18 +6,29 @@ IF OBJECT_ID('dbo.TR_Master_StandardClause_InsteadOfInsert', 'TR') IS NOT NULL D
 GO
 
 IF OBJECT_ID('dbo.RiskHeader', 'V') IS NOT NULL DROP VIEW dbo.RiskHeader;
+IF OBJECT_ID('dbo.RiskHeader', 'U') IS NOT NULL DROP TABLE dbo.RiskHeader;
 IF OBJECT_ID('dbo.RiskAssessment', 'V') IS NOT NULL DROP VIEW dbo.RiskAssessment;
+IF OBJECT_ID('dbo.RiskAssessment', 'U') IS NOT NULL DROP TABLE dbo.RiskAssessment;
 IF OBJECT_ID('dbo.RiskControl', 'V') IS NOT NULL DROP VIEW dbo.RiskControl;
+IF OBJECT_ID('dbo.RiskControl', 'U') IS NOT NULL DROP TABLE dbo.RiskControl;
 IF OBJECT_ID('dbo.RiskStandardMapping', 'V') IS NOT NULL DROP VIEW dbo.RiskStandardMapping;
+IF OBJECT_ID('dbo.RiskStandardMapping', 'U') IS NOT NULL DROP TABLE dbo.RiskStandardMapping;
 IF OBJECT_ID('dbo.RiskTreatmentAction', 'V') IS NOT NULL DROP VIEW dbo.RiskTreatmentAction;
+IF OBJECT_ID('dbo.RiskTreatmentAction', 'U') IS NOT NULL DROP TABLE dbo.RiskTreatmentAction;
 IF OBJECT_ID('dbo.RiskAcceptance', 'V') IS NOT NULL DROP VIEW dbo.RiskAcceptance;
+IF OBJECT_ID('dbo.RiskAcceptance', 'U') IS NOT NULL DROP TABLE dbo.RiskAcceptance;
 IF OBJECT_ID('dbo.AuditLog', 'V') IS NOT NULL DROP VIEW dbo.AuditLog;
+IF OBJECT_ID('dbo.AuditLog', 'U') IS NOT NULL DROP TABLE dbo.AuditLog;
 IF OBJECT_ID('dbo.Master_StandardClause', 'V') IS NOT NULL DROP VIEW dbo.Master_StandardClause;
+IF OBJECT_ID('dbo.Master_StandardClause', 'U') IS NOT NULL DROP TABLE dbo.Master_StandardClause;
 GO
 
 /* Migration safety: Add missing columns to existing tables if present */
 IF OBJECT_ID('dbo.Risk_Register', 'U') IS NOT NULL
 BEGIN
+    IF COL_LENGTH('dbo.Risk_Register', 'RiskOwnerID') IS NULL ALTER TABLE dbo.Risk_Register ADD RiskOwnerID BIGINT NULL;
+    IF COL_LENGTH('dbo.Risk_Register', 'AssessorID') IS NULL ALTER TABLE dbo.Risk_Register ADD AssessorID BIGINT NULL;
+    IF COL_LENGTH('dbo.Risk_Register', 'ApproverID') IS NULL ALTER TABLE dbo.Risk_Register ADD ApproverID BIGINT NULL;
     IF COL_LENGTH('dbo.Risk_Register', 'ThreatDescription') IS NULL ALTER TABLE dbo.Risk_Register ADD ThreatDescription NVARCHAR(3000) NULL;
     IF COL_LENGTH('dbo.Risk_Register', 'VulnerabilityDescription') IS NULL ALTER TABLE dbo.Risk_Register ADD VulnerabilityDescription NVARCHAR(3000) NULL;
     IF COL_LENGTH('dbo.Risk_Register', 'RootCause') IS NULL ALTER TABLE dbo.Risk_Register ADD RootCause NVARCHAR(3000) NULL;
@@ -27,6 +38,12 @@ BEGIN
     IF COL_LENGTH('dbo.Risk_Register', 'RiskStatement') IS NULL ALTER TABLE dbo.Risk_Register ADD RiskStatement NVARCHAR(3000) NULL;
     IF COL_LENGTH('dbo.Risk_Register', 'RiskCause') IS NULL ALTER TABLE dbo.Risk_Register ADD RiskCause NVARCHAR(3000) NULL;
     IF COL_LENGTH('dbo.Risk_Register', 'RiskConsequence') IS NULL ALTER TABLE dbo.Risk_Register ADD RiskConsequence NVARCHAR(3000) NULL;
+END;
+GO
+
+IF OBJECT_ID('dbo.Risk_Standard', 'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH('dbo.Risk_Standard', 'RequirementID') IS NULL ALTER TABLE dbo.Risk_Standard ADD RequirementID BIGINT NULL;
 END;
 GO
 
@@ -44,26 +61,11 @@ BEGIN
 END;
 GO
 
-/* Scoped foreign key drop to protect non-ERM database tables */
+/* Unconditional foreign key drop to guarantee table drop and recreation success */
 DECLARE @sql NVARCHAR(MAX) = N'';
 SELECT @sql += N'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + '.' + QUOTENAME(OBJECT_NAME(parent_object_id)) + 
               ' DROP CONSTRAINT ' + QUOTENAME(name) + ';' + CHAR(13)
-FROM sys.foreign_keys
-WHERE OBJECT_NAME(parent_object_id) IN (
-    'Global_RowPointer', 'Master_BusinessUnit', 'Master_Department', 'User', 'Master_Location', 
-    'Master_Process', 'Master_Asset', 'Master_RiskDomain', 'Master_RiskCategory', 'Master_RiskType', 
-    'Master_RiskSource', 'Master_Threat', 'Master_Vulnerability', 'Master_Consequence', 
-    'Master_ImpactDimension', 'Master_ImpactCriteria', 'Master_LikelihoodCriteria', 'Master_RiskLevel', 
-    'Master_RiskMatrix', 'Master_ControlType', 'Master_ControlMethod', 'Master_ControlFrequency', 
-    'Master_ControlEffectiveness', 'Master_Control', 'Master_TreatmentStrategy', 'Master_ActionPriority', 
-    'Master_ActionStatus', 'Master_RiskStatus', 'Master_Standard', 'Master_StandardRequirement', 
-    'Master_RiskTemplate', 'Master_RiskTemplate_Threat', 'Master_RiskTemplate_Vulnerability', 
-    'Master_RiskTemplate_Impact', 'Master_RiskTemplate_Control', 'Master_RiskTemplate_Standard', 
-    'Master_RiskTemplate_Department', 'Master_Department_Standard', 'Risk_Register', 'Risk_Threat', 
-    'Risk_Vulnerability', 'Risk_Consequence', 'Risk_Assessment', 'Risk_Assessment_Impact', 
-    'Risk_Control', 'Risk_Standard', 'Risk_Treatment', 'Risk_Action', 'Risk_Monitoring', 
-    'Risk_Acceptance', 'Audit_Log'
-);
+FROM sys.foreign_keys;
 EXEC sp_executesql @sql;
 GO
 
@@ -1590,43 +1592,40 @@ GO
    ============================================================================ */
 
 IF OBJECT_ID('dbo.RiskHeader', 'V') IS NOT NULL DROP VIEW dbo.RiskHeader;
-IF OBJECT_ID('dbo.RiskHeader', 'U') IS NULL
-BEGIN
-    EXEC('
-    CREATE VIEW dbo.RiskHeader AS
-    SELECT 
-        RiskID,
-        RiskNo,
-        RiskTitle,
-        RiskDescription,
-        AssessmentDate,
-        NextReviewDate AS ReviewDate,
-        ''Initial'' AS AssessmentType,
-        ''IT Risk'' AS RiskType,
-        RiskCategoryID AS CategoryID,
-        DepartmentID,
-        ProcessID,
-        LocationID,
-        BUID,
-        AssetID,
-        RiskOwnerID,
-        AssessorID,
-        ISNULL(ApproverID, RiskOwnerID) AS ApproverID,
-        ThreatDescription AS Threat,
-        VulnerabilityDescription AS Vulnerability,
-        RootCause AS RiskCause,
-        ConsequenceDescription AS RiskConsequence,
-        ExistingCondition,
-        PotentialImpact,
-        CASE WHEN IsActive = 1 THEN ''Open'' ELSE ''Closed'' END AS Status,
-        IsActive,
-        CreateDate,
-        CreatedBy,
-        UpdatedDate,
-        UpdatedBy
-    FROM dbo.Risk_Register;
-    ');
-END
+IF OBJECT_ID('dbo.RiskHeader', 'U') IS NOT NULL DROP TABLE dbo.RiskHeader;
+GO
+CREATE VIEW dbo.RiskHeader AS
+SELECT 
+    RiskID,
+    RiskNo,
+    RiskTitle,
+    RiskDescription,
+    AssessmentDate,
+    NextReviewDate AS ReviewDate,
+    'Initial' AS AssessmentType,
+    'IT Risk' AS RiskType,
+    RiskCategoryID AS CategoryID,
+    DepartmentID,
+    ProcessID,
+    LocationID,
+    BUID,
+    AssetID,
+    RiskOwnerID,
+    AssessorID,
+    ISNULL(ApproverID, RiskOwnerID) AS ApproverID,
+    ThreatDescription AS Threat,
+    VulnerabilityDescription AS Vulnerability,
+    RootCause AS RiskCause,
+    ConsequenceDescription AS RiskConsequence,
+    ExistingCondition,
+    PotentialImpact,
+    CASE WHEN IsActive = 1 THEN 'Open' ELSE 'Closed' END AS Status,
+    IsActive,
+    CreateDate,
+    CreatedBy,
+    UpdatedDate,
+    UpdatedBy
+FROM dbo.Risk_Register;
 GO
 
 IF OBJECT_ID('dbo.TR_RiskHeader_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskHeader_InsteadOfInsert;
@@ -1697,17 +1696,14 @@ END;
 GO
 
 IF OBJECT_ID('dbo.RiskAssessment', 'V') IS NOT NULL DROP VIEW dbo.RiskAssessment;
-IF OBJECT_ID('dbo.RiskAssessment', 'U') IS NULL
-BEGIN
-    EXEC('
-    CREATE VIEW dbo.RiskAssessment AS
-    SELECT 
-        AssessmentID, RiskID, AssessmentType, LikelihoodScore AS Likelihood, ImpactScore AS Impact,
-        ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact,
-        RiskScore, RiskLevel, AssessorID, AssessmentDate, Comments, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
-    FROM dbo.Risk_Assessment;
-    ');
-END
+IF OBJECT_ID('dbo.RiskAssessment', 'U') IS NOT NULL DROP TABLE dbo.RiskAssessment;
+GO
+CREATE VIEW dbo.RiskAssessment AS
+SELECT 
+    AssessmentID, RiskID, AssessmentType, LikelihoodScore AS Likelihood, ImpactScore AS Impact,
+    ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact,
+    RiskScore, RiskLevel, AssessorID, AssessmentDate, Comments, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+FROM dbo.Risk_Assessment;
 GO
 
 IF OBJECT_ID('dbo.TR_RiskAssessment_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskAssessment_InsteadOfInsert;
@@ -1740,17 +1736,14 @@ WHERE IsCurrent = 1;
 GO
 
 IF OBJECT_ID('dbo.RiskControl', 'V') IS NOT NULL DROP VIEW dbo.RiskControl;
-IF OBJECT_ID('dbo.RiskControl', 'U') IS NULL
-BEGIN
-    EXEC('
-    CREATE VIEW dbo.RiskControl AS
-    SELECT 
-        ControlID, RiskID, ControlCode, ControlName, ControlDescription, ControlType,
-        ManualOrAutomated, ControlOwner, Frequency, ControlEvidence, ControlEffectiveness,
-        IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
-    FROM dbo.Risk_Control;
-    ');
-END
+IF OBJECT_ID('dbo.RiskControl', 'U') IS NOT NULL DROP TABLE dbo.RiskControl;
+GO
+CREATE VIEW dbo.RiskControl AS
+SELECT 
+    ControlID, RiskID, ControlCode, ControlName, ControlDescription, ControlType,
+    ManualOrAutomated, ControlOwner, Frequency, ControlEvidence, ControlEffectiveness,
+    IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+FROM dbo.Risk_Control;
 GO
 
 IF OBJECT_ID('dbo.TR_RiskControl_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskControl_InsteadOfInsert;
@@ -1776,16 +1769,13 @@ END;
 GO
 
 IF OBJECT_ID('dbo.RiskStandardMapping', 'V') IS NOT NULL DROP VIEW dbo.RiskStandardMapping;
-IF OBJECT_ID('dbo.RiskStandardMapping', 'U') IS NULL
-BEGIN
-    EXEC('
-    CREATE VIEW dbo.RiskStandardMapping AS
-    SELECT 
-        RiskStandardID AS MappingID, RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status,
-        IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
-    FROM dbo.Risk_Standard;
-    ');
-END
+IF OBJECT_ID('dbo.RiskStandardMapping', 'U') IS NOT NULL DROP TABLE dbo.RiskStandardMapping;
+GO
+CREATE VIEW dbo.RiskStandardMapping AS
+SELECT 
+    RiskStandardID AS MappingID, RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status,
+    IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+FROM dbo.Risk_Standard;
 GO
 
 IF OBJECT_ID('dbo.TR_RiskStandardMapping_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskStandardMapping_InsteadOfInsert;
@@ -1808,16 +1798,13 @@ END;
 GO
 
 IF OBJECT_ID('dbo.RiskTreatmentAction', 'V') IS NOT NULL DROP VIEW dbo.RiskTreatmentAction;
-IF OBJECT_ID('dbo.RiskTreatmentAction', 'U') IS NULL
-BEGIN
-    EXEC('
-    CREATE VIEW dbo.RiskTreatmentAction AS
-    SELECT 
-        ActionID, RiskID, TreatmentStrategy, TreatmentAction, ActionOwner, TargetDate,
-        Priority, RequiredBudget, ProgressPercent, Status, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
-    FROM dbo.Risk_Action;
-    ');
-END
+IF OBJECT_ID('dbo.RiskTreatmentAction', 'U') IS NOT NULL DROP TABLE dbo.RiskTreatmentAction;
+GO
+CREATE VIEW dbo.RiskTreatmentAction AS
+SELECT 
+    ActionID, RiskID, TreatmentStrategy, TreatmentAction, ActionOwner, TargetDate,
+    Priority, RequiredBudget, ProgressPercent, Status, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+FROM dbo.Risk_Action;
 GO
 
 IF OBJECT_ID('dbo.TR_RiskTreatmentAction_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskTreatmentAction_InsteadOfInsert;
@@ -1841,16 +1828,13 @@ END;
 GO
 
 IF OBJECT_ID('dbo.RiskAcceptance', 'V') IS NOT NULL DROP VIEW dbo.RiskAcceptance;
-IF OBJECT_ID('dbo.RiskAcceptance', 'U') IS NULL
-BEGIN
-    EXEC('
-    CREATE VIEW dbo.RiskAcceptance AS
-    SELECT 
-        AcceptanceID, RiskID, IsRequired, AcceptedBy, AcceptanceDate, AcceptanceReason, ReviewFrequency,
-        IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
-    FROM dbo.Risk_Acceptance;
-    ');
-END
+IF OBJECT_ID('dbo.RiskAcceptance', 'U') IS NOT NULL DROP TABLE dbo.RiskAcceptance;
+GO
+CREATE VIEW dbo.RiskAcceptance AS
+SELECT 
+    AcceptanceID, RiskID, IsRequired, AcceptedBy, AcceptanceDate, AcceptanceReason, ReviewFrequency,
+    IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+FROM dbo.Risk_Acceptance;
 GO
 
 IF OBJECT_ID('dbo.TR_RiskAcceptance_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskAcceptance_InsteadOfInsert;
@@ -1873,22 +1857,19 @@ END;
 GO
 
 IF OBJECT_ID('dbo.AuditLog', 'V') IS NOT NULL DROP VIEW dbo.AuditLog;
-IF OBJECT_ID('dbo.AuditLog', 'U') IS NULL
-BEGIN
-    EXEC('
-    CREATE VIEW dbo.AuditLog AS
-    SELECT 
-        AuditLogID AS LogID,
-        UserName AS UserID,
-        ActionType AS Action,
-        TableName,
-        RecordID,
-        OldValue,
-        NewValue,
-        CreateDate
-    FROM dbo.Audit_Log;
-    ');
-END
+IF OBJECT_ID('dbo.AuditLog', 'U') IS NOT NULL DROP TABLE dbo.AuditLog;
+GO
+CREATE VIEW dbo.AuditLog AS
+SELECT 
+    AuditLogID AS LogID,
+    UserName AS UserID,
+    ActionType AS Action,
+    TableName,
+    RecordID,
+    OldValue,
+    NewValue,
+    CreateDate
+FROM dbo.Audit_Log;
 GO
 
 IF OBJECT_ID('dbo.TR_AuditLog_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_AuditLog_InsteadOfInsert;
@@ -1926,24 +1907,21 @@ GO
    ============================================================================ */
 
 IF OBJECT_ID('dbo.Master_StandardClause', 'V') IS NOT NULL DROP VIEW dbo.Master_StandardClause;
-IF OBJECT_ID('dbo.Master_StandardClause', 'U') IS NULL
-BEGIN
-    EXEC('
-    CREATE VIEW dbo.Master_StandardClause AS
-    SELECT 
-        RequirementID AS ClauseID,
-        StandardID,
-        RequirementCode AS ClauseNo,
-        RequirementTitle AS ClauseTitle,
-        RequirementDescription AS Description,
-        IsActive,
-        CreateDate,
-        CreatedBy,
-        UpdatedDate,
-        UpdatedBy
-    FROM dbo.Master_StandardRequirement;
-    ');
-END
+IF OBJECT_ID('dbo.Master_StandardClause', 'U') IS NOT NULL DROP TABLE dbo.Master_StandardClause;
+GO
+CREATE VIEW dbo.Master_StandardClause AS
+SELECT 
+    RequirementID AS ClauseID,
+    StandardID,
+    RequirementCode AS ClauseNo,
+    RequirementTitle AS ClauseTitle,
+    RequirementDescription AS Description,
+    IsActive,
+    CreateDate,
+    CreatedBy,
+    UpdatedDate,
+    UpdatedBy
+FROM dbo.Master_StandardRequirement;
 GO
 
 IF OBJECT_ID('dbo.TR_Master_StandardClause_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_Master_StandardClause_InsteadOfInsert;
