@@ -283,9 +283,8 @@ export default function CreateRiskModal({
       onClose();
     } catch (err) {
       setSubmitting(false);
-      const serverMsg = err.response?.data?.message || err.response?.data?.error || err.message;
-      const serverDetails = err.response?.data?.details ? `\n\n[Details]: ${err.response.data.details}` : '';
-      alert(`เกิดข้อผิดพลาดในการบันทึกข้อมูล:\n${serverMsg}${serverDetails}`);
+      const msg = err.friendlyMessage || err.response?.data?.message || err.message;
+      alert(`เกิดข้อผิดพลาดในการบันทึกข้อมูล:\n${msg}`);
     }
   };
 

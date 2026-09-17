@@ -7,6 +7,41 @@ const api = axios.create({
   },
 });
 
+// Response interceptor to translate HTTP error status codes (502, 503, 504, etc.) into clear Thai error messages
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    let friendlyMessage = '';
+    if (!error.response) {
+      friendlyMessage = 'ไม่สามารถเชื่อมต่อระบบหลังบ้านได้ (Network Error / Offline)\nกรุณาตรวจสอบว่าเซิร์ฟเวอร์เปิดอยู่ หรือตรวจสอบการเชื่อมต่อเครือข่ายของคุณ';
+    } else {
+      const status = error.response.status;
+      const data = error.response.data;
+
+      if (status === 502) {
+        friendlyMessage = 'เซิร์ฟเวอร์หลังบ้านกำลังเริ่มต้นระบบ หรือกำลัง Re-deploy ชั่วคราว (HTTP 502 Bad Gateway)\nกรุณารอประมาณ 5-10 วินาที แล้วลองกดบันทึกใหม่อีกครั้ง';
+      } else if (status === 503) {
+        friendlyMessage = 'ระบบไม่พร้อมให้บริการชั่วคราว (HTTP 503 Service Unavailable)\nกรุณาลองใหม่อีกครั้งในอีกสักครู่';
+      } else if (status === 504) {
+        friendlyMessage = 'การเชื่อมต่อหมดเวลา (HTTP 504 Gateway Timeout)\nกรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้ง';
+      } else if (status === 404) {
+        friendlyMessage = typeof data === 'object' && data?.message ? data.message : 'ไม่พบข้อมูลที่ต้องการในระบบ (HTTP 404 Not Found)';
+      } else if (status === 400) {
+        const msg = typeof data === 'object' ? (data?.message || data?.error) : null;
+        friendlyMessage = msg || 'ข้อมูลที่ส่งมาไม่ถูกต้อง (HTTP 400 Bad Request)';
+      } else {
+        let mainMsg = typeof data === 'object' ? (data?.message || data?.error) : null;
+        if (!mainMsg) mainMsg = error.message || `เกิดข้อผิดพลาดในการรับส่งข้อมูล (HTTP ${status})`;
+        const detailsMsg = (typeof data === 'object' && data?.details) ? `\nรายละเอียด: ${data.details}` : '';
+        friendlyMessage = `${mainMsg}${detailsMsg}`;
+      }
+    }
+
+    error.friendlyMessage = friendlyMessage;
+    return Promise.reject(error);
+  }
+);
+
 export const getDashboardSummary = async () => {
   const response = await api.get('/dashboard/summary');
   return response.data;
