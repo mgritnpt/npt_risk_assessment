@@ -225,23 +225,21 @@ const createRisk = async (req, res) => {
     // Generate RiskNo if not provided (e.g. IT-R-2026-003)
     let riskNo = header.RiskNo;
     if (!riskNo) {
-      const countRes = await new sql.Request(transaction).query(`SELECT COUNT(*) AS total FROM dbo.RiskHeader`);
+      const countRes = await new sql.Request(transaction).query(`SELECT COUNT(*) AS total FROM dbo.Risk_Register WITH (NOLOCK)`);
       const nextNum = (countRes.recordset[0].total + 1).toString().padStart(3, '0');
       const year = new Date().getFullYear();
       riskNo = `IT-R-${year}-${nextNum}`;
     }
 
-    // 1. Insert RiskHeader
+    // 1. Insert Risk_Register
     const headerReq = new sql.Request(transaction);
     headerReq
       .input('RiskNo', sql.NVarChar, riskNo)
       .input('RiskTitle', sql.NVarChar, header.RiskTitle || '')
       .input('RiskDescription', sql.NVarChar, header.RiskDescription || '')
       .input('AssessmentDate', sql.Date, header.AssessmentDate || new Date())
-      .input('ReviewDate', sql.Date, header.ReviewDate || null)
-      .input('AssessmentType', sql.NVarChar, header.AssessmentType || 'Initial')
-      .input('RiskType', sql.NVarChar, header.RiskType || 'IT Risk')
-      .input('CategoryID', sql.BigInt, parseBigInt(header.CategoryID))
+      .input('NextReviewDate', sql.Date, header.ReviewDate || null)
+      .input('RiskCategoryID', sql.BigInt, parseBigInt(header.CategoryID))
       .input('DepartmentID', sql.BigInt, parseBigInt(header.DepartmentID))
       .input('ProcessID', sql.BigInt, parseBigInt(header.ProcessID))
       .input('LocationID', sql.BigInt, parseBigInt(header.LocationID))
@@ -250,101 +248,97 @@ const createRisk = async (req, res) => {
       .input('RiskOwnerID', sql.BigInt, parseBigInt(header.RiskOwnerID))
       .input('AssessorID', sql.BigInt, parseBigInt(header.AssessorID))
       .input('ApproverID', sql.BigInt, parseBigInt(header.ApproverID))
-      .input('Threat', sql.NVarChar, header.Threat || '')
-      .input('Vulnerability', sql.NVarChar, header.Vulnerability || '')
-      .input('RiskCause', sql.NVarChar, header.RiskCause || '')
-      .input('RiskConsequence', sql.NVarChar, header.RiskConsequence || '')
+      .input('ThreatDescription', sql.NVarChar, header.Threat || '')
+      .input('VulnerabilityDescription', sql.NVarChar, header.Vulnerability || '')
+      .input('RootCause', sql.NVarChar, header.RiskCause || '')
+      .input('ConsequenceDescription', sql.NVarChar, header.RiskConsequence || '')
       .input('ExistingCondition', sql.NVarChar, header.ExistingCondition || '')
       .input('PotentialImpact', sql.NVarChar, header.PotentialImpact || '')
-      .input('Status', sql.NVarChar, header.Status || 'Open');
+      .input('IsActive', sql.Bit, header.Status === 'Closed' ? 0 : 1);
 
-    await headerReq.query(`
-      INSERT INTO dbo.RiskHeader (
-        RiskNo, RiskTitle, RiskDescription, AssessmentDate, ReviewDate, AssessmentType, RiskType,
-        CategoryID, DepartmentID, ProcessID, LocationID, BUID, AssetID, RiskOwnerID, AssessorID, ApproverID,
-        Threat, Vulnerability, RiskCause, RiskConsequence, ExistingCondition, PotentialImpact, Status
+    const headerRes = await headerReq.query(`
+      INSERT INTO dbo.Risk_Register (
+        RiskNo, RiskTitle, RiskDescription, AssessmentDate, NextReviewDate,
+        RiskCategoryID, DepartmentID, ProcessID, LocationID, BUID, AssetID,
+        RiskOwnerID, AssessorID, ApproverID,
+        ThreatDescription, VulnerabilityDescription, RootCause, ConsequenceDescription,
+        ExistingCondition, PotentialImpact, IsActive
       )
+      OUTPUT INSERTED.RiskID
       VALUES (
-        @RiskNo, @RiskTitle, @RiskDescription, @AssessmentDate, @ReviewDate, @AssessmentType, @RiskType,
-        @CategoryID, @DepartmentID, @ProcessID, @LocationID, @BUID, @AssetID, @RiskOwnerID, @AssessorID, @ApproverID,
-        @Threat, @Vulnerability, @RiskCause, @RiskConsequence, @ExistingCondition, @PotentialImpact, @Status
+        @RiskNo, @RiskTitle, @RiskDescription, @AssessmentDate, @NextReviewDate,
+        @RiskCategoryID, @DepartmentID, @ProcessID, @LocationID, @BUID, @AssetID,
+        @RiskOwnerID, @AssessorID, @ApproverID,
+        @ThreatDescription, @VulnerabilityDescription, @RootCause, @ConsequenceDescription,
+        @ExistingCondition, @PotentialImpact, @IsActive
       )
     `);
 
-    const idReq = new sql.Request(transaction);
-    const idResult = await idReq
-      .input('RiskNo', sql.NVarChar, riskNo)
-      .query(`SELECT TOP 1 RiskID FROM dbo.Risk_Register WHERE RiskNo = @RiskNo ORDER BY RiskID DESC`);
+    const riskId = headerRes.recordset[0].RiskID;
 
-    const riskId = idResult.recordset[0].RiskID;
-
-    // 2. Insert Inherent Assessment
+    // 2. Insert Inherent Assessment directly into dbo.Risk_Assessment
     if (inherentAssessment) {
       const l = parseInt(inherentAssessment.Likelihood || 3, 10);
       const i = parseInt(inherentAssessment.Impact || 3, 10);
-      const score = l * i;
-      const level = calcLevel(score);
+      const level = calcLevel(l * i);
 
       const inhReq = new sql.Request(transaction);
       inhReq
         .input('RiskID', sql.BigInt, riskId)
-        .input('Likelihood', sql.Int, l)
-        .input('Impact', sql.Int, i)
+        .input('LikelihoodScore', sql.Int, l)
+        .input('ImpactScore', sql.Int, i)
         .input('ConfidentialityImpact', sql.Int, inherentAssessment.ConfidentialityImpact || l)
         .input('IntegrityImpact', sql.Int, inherentAssessment.IntegrityImpact || l)
         .input('AvailabilityImpact', sql.Int, inherentAssessment.AvailabilityImpact || i)
         .input('QualityImpact', sql.Int, inherentAssessment.QualityImpact || i)
         .input('FinancialImpact', sql.Int, inherentAssessment.FinancialImpact || i)
-        .input('RiskScore', sql.Int, score)
         .input('RiskLevel', sql.NVarChar, level);
 
       await inhReq.query(`
-        INSERT INTO dbo.RiskAssessment (
-          RiskID, AssessmentType, Likelihood, Impact,
+        INSERT INTO dbo.Risk_Assessment (
+          RiskID, AssessmentType, LikelihoodScore, ImpactScore,
           ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact,
-          RiskScore, RiskLevel
+          RiskLevel
         ) VALUES (
-          @RiskID, 'INHERENT', @Likelihood, @Impact,
+          @RiskID, 'INHERENT', @LikelihoodScore, @ImpactScore,
           @ConfidentialityImpact, @IntegrityImpact, @AvailabilityImpact, @QualityImpact, @FinancialImpact,
-          @RiskScore, @RiskLevel
+          @RiskLevel
         )
       `);
     }
 
-    // 3. Insert Residual Assessment
+    // 3. Insert Residual Assessment directly into dbo.Risk_Assessment
     if (residualAssessment) {
       const l = parseInt(residualAssessment.Likelihood || 2, 10);
       const i = parseInt(residualAssessment.Impact || 2, 10);
-      const score = l * i;
-      const level = calcLevel(score);
+      const level = calcLevel(l * i);
 
       const resReq = new sql.Request(transaction);
       resReq
         .input('RiskID', sql.BigInt, riskId)
-        .input('Likelihood', sql.Int, l)
-        .input('Impact', sql.Int, i)
+        .input('LikelihoodScore', sql.Int, l)
+        .input('ImpactScore', sql.Int, i)
         .input('ConfidentialityImpact', sql.Int, residualAssessment.ConfidentialityImpact || l)
         .input('IntegrityImpact', sql.Int, residualAssessment.IntegrityImpact || l)
         .input('AvailabilityImpact', sql.Int, residualAssessment.AvailabilityImpact || i)
         .input('QualityImpact', sql.Int, residualAssessment.QualityImpact || i)
         .input('FinancialImpact', sql.Int, residualAssessment.FinancialImpact || i)
-        .input('RiskScore', sql.Int, score)
         .input('RiskLevel', sql.NVarChar, level);
 
       await resReq.query(`
-        INSERT INTO dbo.RiskAssessment (
-          RiskID, AssessmentType, Likelihood, Impact,
+        INSERT INTO dbo.Risk_Assessment (
+          RiskID, AssessmentType, LikelihoodScore, ImpactScore,
           ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact,
-          RiskScore, RiskLevel
+          RiskLevel
         ) VALUES (
-          @RiskID, 'RESIDUAL', @Likelihood, @Impact,
+          @RiskID, 'RESIDUAL', @LikelihoodScore, @ImpactScore,
           @ConfidentialityImpact, @IntegrityImpact, @AvailabilityImpact, @QualityImpact, @FinancialImpact,
-          @RiskScore, @RiskLevel
+          @RiskLevel
         )
       `);
     }
 
-    // 4. Insert Controls
+    // 4. Insert Controls directly into dbo.Risk_Control
     for (const ctrl of controls) {
       if (ctrl && ctrl.ControlName) {
         const ctrlReq = new sql.Request(transaction);
@@ -359,16 +353,19 @@ const createRisk = async (req, res) => {
           .input('ControlEffectiveness', sql.NVarChar, ctrl.ControlEffectiveness || 'Effective');
 
         await ctrlReq.query(`
-          INSERT INTO dbo.RiskControl (
-            RiskID, ControlName, ControlDescription, ControlType, ManualOrAutomated, ControlOwner, ControlEvidence, ControlEffectiveness
+          INSERT INTO dbo.Risk_Control (
+            RiskID, ControlID, ControlCode, ControlName, ControlDescription, ControlType,
+            ManualOrAutomated, ControlOwner, ControlEvidence, ControlEffectiveness
           ) VALUES (
-            @RiskID, @ControlName, @ControlDescription, @ControlType, @ManualOrAutomated, @ControlOwner, @ControlEvidence, @ControlEffectiveness
+            @RiskID, ISNULL((SELECT TOP 1 ControlID FROM dbo.Master_Control ORDER BY ControlID), 1), 'CTL-01',
+            @ControlName, @ControlDescription, @ControlType,
+            @ManualOrAutomated, @ControlOwner, @ControlEvidence, @ControlEffectiveness
           )
         `);
       }
     }
 
-    // 5. Insert Standards Mapped
+    // 5. Insert Standards Mapped directly into dbo.Risk_Standard
     for (const std of standards) {
       const sId = parseBigInt(std.StandardID);
       if (sId) {
@@ -381,16 +378,16 @@ const createRisk = async (req, res) => {
           .input('ComplianceGap', sql.NVarChar, std.ComplianceGap || '');
 
         await stdReq.query(`
-          INSERT INTO dbo.RiskStandardMapping (
-            RiskID, StandardID, ClauseID, ControlReference, ComplianceGap
+          INSERT INTO dbo.Risk_Standard (
+            RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status
           ) VALUES (
-            @RiskID, @StandardID, @ClauseID, @ControlReference, @ComplianceGap
+            @RiskID, @StandardID, @ClauseID, @ControlReference, @ComplianceGap, 'Compliant'
           )
         `);
       }
     }
 
-    // 6. Insert Treatment Actions
+    // 6. Insert Treatment Actions directly into dbo.Risk_Action
     for (const act of actions) {
       if (act && act.TreatmentAction) {
         const actReq = new sql.Request(transaction);
@@ -406,7 +403,7 @@ const createRisk = async (req, res) => {
           .input('Status', sql.NVarChar, act.Status || 'Open');
 
         await actReq.query(`
-          INSERT INTO dbo.RiskTreatmentAction (
+          INSERT INTO dbo.Risk_Action (
             RiskID, TreatmentStrategy, TreatmentAction, ActionOwner, TargetDate, Priority, RequiredBudget, ProgressPercent, Status
           ) VALUES (
             @RiskID, @TreatmentStrategy, @TreatmentAction, @ActionOwner, @TargetDate, @Priority, @RequiredBudget, @ProgressPercent, @Status
@@ -415,8 +412,8 @@ const createRisk = async (req, res) => {
       }
     }
 
-    // 7. Insert Risk Acceptance
-    if (acceptance && (acceptance.AcceptedBy || acceptance.IsRequired || acceptance.AcceptanceReason)) {
+    // 7. Insert Risk Acceptance directly into dbo.Risk_Acceptance
+    if (acceptance) {
       const accReq = new sql.Request(transaction);
       accReq
         .input('RiskID', sql.BigInt, riskId)
@@ -426,7 +423,7 @@ const createRisk = async (req, res) => {
         .input('AcceptanceReason', sql.NVarChar, acceptance.AcceptanceReason || '');
 
       await accReq.query(`
-        INSERT INTO dbo.RiskAcceptance (
+        INSERT INTO dbo.Risk_Acceptance (
           RiskID, IsRequired, AcceptedBy, AcceptanceDate, AcceptanceReason
         ) VALUES (
           @RiskID, @IsRequired, @AcceptedBy, @AcceptanceDate, @AcceptanceReason
@@ -435,13 +432,17 @@ const createRisk = async (req, res) => {
     }
 
     // 8. Create Audit Log Entry
-    await createAuditLog(transaction, 'SYSTEM', 'CREATE', 'RiskHeader', riskId, null, { RiskNo: riskNo, Title: header.RiskTitle });
+    await createAuditLog(transaction, 'SYSTEM', 'CREATE', 'Risk_Register', riskId, null, { RiskNo: riskNo, Title: header.RiskTitle });
 
     await transaction.commit();
     res.status(201).json({ message: 'Risk created successfully', riskID: riskId, riskNo });
 
   } catch (error) {
-    await transaction.rollback();
+    try {
+      await transaction.rollback();
+    } catch (rbErr) {
+      console.error('Rollback failed or transaction already aborted:', rbErr.message);
+    }
     console.error('Error creating risk:', error);
     res.status(500).json({
       message: 'Error creating risk: ' + (error.message || 'Unknown error'),
@@ -472,13 +473,13 @@ const updateRisk = async (req, res) => {
 
     const riskId = parseBigInt(id);
 
-    // 1. Update Header
+    // 1. Update Header directly in dbo.Risk_Register
     const headerReq = new sql.Request(transaction);
     headerReq
       .input('id', sql.BigInt, riskId)
       .input('RiskTitle', sql.NVarChar, header.RiskTitle || '')
       .input('RiskDescription', sql.NVarChar, header.RiskDescription || '')
-      .input('CategoryID', sql.BigInt, parseBigInt(header.CategoryID))
+      .input('RiskCategoryID', sql.BigInt, parseBigInt(header.CategoryID))
       .input('DepartmentID', sql.BigInt, parseBigInt(header.DepartmentID))
       .input('ProcessID', sql.BigInt, parseBigInt(header.ProcessID))
       .input('LocationID', sql.BigInt, parseBigInt(header.LocationID))
@@ -487,19 +488,19 @@ const updateRisk = async (req, res) => {
       .input('RiskOwnerID', sql.BigInt, parseBigInt(header.RiskOwnerID))
       .input('AssessorID', sql.BigInt, parseBigInt(header.AssessorID))
       .input('ApproverID', sql.BigInt, parseBigInt(header.ApproverID))
-      .input('Threat', sql.NVarChar, header.Threat || '')
-      .input('Vulnerability', sql.NVarChar, header.Vulnerability || '')
-      .input('RiskCause', sql.NVarChar, header.RiskCause || '')
-      .input('RiskConsequence', sql.NVarChar, header.RiskConsequence || '')
+      .input('ThreatDescription', sql.NVarChar, header.Threat || '')
+      .input('VulnerabilityDescription', sql.NVarChar, header.Vulnerability || '')
+      .input('RootCause', sql.NVarChar, header.RiskCause || '')
+      .input('ConsequenceDescription', sql.NVarChar, header.RiskConsequence || '')
       .input('ExistingCondition', sql.NVarChar, header.ExistingCondition || '')
       .input('PotentialImpact', sql.NVarChar, header.PotentialImpact || '')
-      .input('Status', sql.NVarChar, header.Status || 'Open');
+      .input('IsActive', sql.Bit, header.Status === 'Closed' ? 0 : 1);
 
     await headerReq.query(`
-      UPDATE dbo.RiskHeader SET
+      UPDATE dbo.Risk_Register SET
         RiskTitle = @RiskTitle,
         RiskDescription = @RiskDescription,
-        CategoryID = @CategoryID,
+        RiskCategoryID = @RiskCategoryID,
         DepartmentID = @DepartmentID,
         ProcessID = @ProcessID,
         LocationID = @LocationID,
@@ -508,86 +509,82 @@ const updateRisk = async (req, res) => {
         RiskOwnerID = @RiskOwnerID,
         AssessorID = @AssessorID,
         ApproverID = @ApproverID,
-        Threat = @Threat,
-        Vulnerability = @Vulnerability,
-        RiskCause = @RiskCause,
-        RiskConsequence = @RiskConsequence,
+        ThreatDescription = @ThreatDescription,
+        VulnerabilityDescription = @VulnerabilityDescription,
+        RootCause = @RootCause,
+        ConsequenceDescription = @ConsequenceDescription,
         ExistingCondition = @ExistingCondition,
         PotentialImpact = @PotentialImpact,
-        Status = @Status,
+        IsActive = @IsActive,
         UpdatedDate = GETDATE()
       WHERE RiskID = @id
     `);
 
-    // 2. Update Inherent Assessment
+    // 2. Update Inherent Assessment directly in dbo.Risk_Assessment
     if (inherentAssessment) {
       const l = parseInt(inherentAssessment.Likelihood || 3, 10);
       const i = parseInt(inherentAssessment.Impact || 3, 10);
-      const score = l * i;
-      const level = calcLevel(score);
+      const level = calcLevel(l * i);
 
       const inhReq = new sql.Request(transaction);
       inhReq
         .input('RiskID', sql.BigInt, riskId)
-        .input('Likelihood', sql.Int, l)
-        .input('Impact', sql.Int, i)
+        .input('LikelihoodScore', sql.Int, l)
+        .input('ImpactScore', sql.Int, i)
         .input('ConfidentialityImpact', sql.Int, inherentAssessment.ConfidentialityImpact || l)
         .input('IntegrityImpact', sql.Int, inherentAssessment.IntegrityImpact || l)
         .input('AvailabilityImpact', sql.Int, inherentAssessment.AvailabilityImpact || i)
         .input('QualityImpact', sql.Int, inherentAssessment.QualityImpact || i)
         .input('FinancialImpact', sql.Int, inherentAssessment.FinancialImpact || i)
-        .input('RiskScore', sql.Int, score)
         .input('RiskLevel', sql.NVarChar, level);
 
       await inhReq.query(`
         IF EXISTS (SELECT 1 FROM dbo.Risk_Assessment WHERE RiskID = @RiskID AND AssessmentType = 'INHERENT')
           UPDATE dbo.Risk_Assessment SET
-            LikelihoodScore = @Likelihood, ImpactScore = @Impact,
+            LikelihoodScore = @LikelihoodScore, ImpactScore = @ImpactScore,
             ConfidentialityImpact = @ConfidentialityImpact, IntegrityImpact = @IntegrityImpact,
             AvailabilityImpact = @AvailabilityImpact, QualityImpact = @QualityImpact, FinancialImpact = @FinancialImpact,
             RiskLevel = @RiskLevel, UpdatedDate = GETDATE()
           WHERE RiskID = @RiskID AND AssessmentType = 'INHERENT'
         ELSE
-          INSERT INTO dbo.RiskAssessment (RiskID, AssessmentType, Likelihood, Impact, ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact, RiskScore, RiskLevel)
-          VALUES (@RiskID, 'INHERENT', @Likelihood, @Impact, @ConfidentialityImpact, @IntegrityImpact, @AvailabilityImpact, @QualityImpact, @FinancialImpact, @RiskScore, @RiskLevel)
+          INSERT INTO dbo.Risk_Assessment (RiskID, AssessmentType, LikelihoodScore, ImpactScore, ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact, RiskLevel)
+          VALUES (@RiskID, 'INHERENT', @LikelihoodScore, @ImpactScore, @ConfidentialityImpact, @IntegrityImpact, @AvailabilityImpact, @QualityImpact, @FinancialImpact, @RiskLevel)
       `);
     }
 
-    // 3. Update Residual Assessment
+    // 3. Update Residual Assessment directly in dbo.Risk_Assessment
     if (residualAssessment) {
       const l = parseInt(residualAssessment.Likelihood || 2, 10);
       const i = parseInt(residualAssessment.Impact || 2, 10);
-      const score = l * i;
-      const level = calcLevel(score);
+      const level = calcLevel(l * i);
 
       const resReq = new sql.Request(transaction);
       resReq
         .input('RiskID', sql.BigInt, riskId)
-        .input('Likelihood', sql.Int, l)
-        .input('Impact', sql.Int, i)
+        .input('LikelihoodScore', sql.Int, l)
+        .input('ImpactScore', sql.Int, i)
         .input('ConfidentialityImpact', sql.Int, residualAssessment.ConfidentialityImpact || l)
         .input('IntegrityImpact', sql.Int, residualAssessment.IntegrityImpact || l)
         .input('AvailabilityImpact', sql.Int, residualAssessment.AvailabilityImpact || i)
         .input('QualityImpact', sql.Int, residualAssessment.QualityImpact || i)
         .input('FinancialImpact', sql.Int, residualAssessment.FinancialImpact || i)
-        .input('RiskScore', sql.Int, score)
         .input('RiskLevel', sql.NVarChar, level);
 
       await resReq.query(`
         IF EXISTS (SELECT 1 FROM dbo.Risk_Assessment WHERE RiskID = @RiskID AND AssessmentType = 'RESIDUAL')
           UPDATE dbo.Risk_Assessment SET
-            LikelihoodScore = @Likelihood, ImpactScore = @Impact,
+            LikelihoodScore = @LikelihoodScore, ImpactScore = @ImpactScore,
             ConfidentialityImpact = @ConfidentialityImpact, IntegrityImpact = @IntegrityImpact,
             AvailabilityImpact = @AvailabilityImpact, QualityImpact = @QualityImpact, FinancialImpact = @FinancialImpact,
             RiskLevel = @RiskLevel, UpdatedDate = GETDATE()
           WHERE RiskID = @RiskID AND AssessmentType = 'RESIDUAL'
         ELSE
-          INSERT INTO dbo.RiskAssessment (RiskID, AssessmentType, Likelihood, Impact, ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact, RiskScore, RiskLevel)
-          VALUES (@RiskID, 'RESIDUAL', @Likelihood, @Impact, @ConfidentialityImpact, @IntegrityImpact, @AvailabilityImpact, @QualityImpact, @FinancialImpact, @RiskScore, @RiskLevel)
+          INSERT INTO dbo.Risk_Assessment (RiskID, AssessmentType, LikelihoodScore, ImpactScore, ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact, RiskLevel)
+          VALUES (@RiskID, 'RESIDUAL', @LikelihoodScore, @ImpactScore, @ConfidentialityImpact, @IntegrityImpact, @AvailabilityImpact, @QualityImpact, @FinancialImpact, @RiskLevel)
       `);
     }
 
-    // 4. Update Controls (Delete & Re-insert)
+    // 4. Update Controls (Delete & Re-insert directly into dbo.Risk_Control)
     await new sql.Request(transaction).input('RiskID', sql.BigInt, riskId).query(`DELETE FROM dbo.Risk_Control WHERE RiskID = @RiskID`);
     for (const ctrl of controls) {
       if (ctrl && ctrl.ControlName) {
@@ -603,16 +600,19 @@ const updateRisk = async (req, res) => {
           .input('ControlEffectiveness', sql.NVarChar, ctrl.ControlEffectiveness || 'Effective');
 
         await ctrlReq.query(`
-          INSERT INTO dbo.RiskControl (
-            RiskID, ControlName, ControlDescription, ControlType, ManualOrAutomated, ControlOwner, ControlEvidence, ControlEffectiveness
+          INSERT INTO dbo.Risk_Control (
+            RiskID, ControlID, ControlCode, ControlName, ControlDescription, ControlType,
+            ManualOrAutomated, ControlOwner, ControlEvidence, ControlEffectiveness
           ) VALUES (
-            @RiskID, @ControlName, @ControlDescription, @ControlType, @ManualOrAutomated, @ControlOwner, @ControlEvidence, @ControlEffectiveness
+            @RiskID, ISNULL((SELECT TOP 1 ControlID FROM dbo.Master_Control ORDER BY ControlID), 1), 'CTL-01',
+            @ControlName, @ControlDescription, @ControlType,
+            @ManualOrAutomated, @ControlOwner, @ControlEvidence, @ControlEffectiveness
           )
         `);
       }
     }
 
-    // 5. Update Standards Mapped (Delete & Re-insert)
+    // 5. Update Standards Mapped (Delete & Re-insert directly into dbo.Risk_Standard)
     await new sql.Request(transaction).input('RiskID', sql.BigInt, riskId).query(`DELETE FROM dbo.Risk_Standard WHERE RiskID = @RiskID`);
     for (const std of standards) {
       const sId = parseBigInt(std.StandardID);
@@ -626,16 +626,16 @@ const updateRisk = async (req, res) => {
           .input('ComplianceGap', sql.NVarChar, std.ComplianceGap || '');
 
         await stdReq.query(`
-          INSERT INTO dbo.RiskStandardMapping (
-            RiskID, StandardID, ClauseID, ControlReference, ComplianceGap
+          INSERT INTO dbo.Risk_Standard (
+            RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status
           ) VALUES (
-            @RiskID, @StandardID, @ClauseID, @ControlReference, @ComplianceGap
+            @RiskID, @StandardID, @ClauseID, @ControlReference, @ComplianceGap, 'Compliant'
           )
         `);
       }
     }
 
-    // 6. Update Treatment Actions (Delete & Re-insert)
+    // 6. Update Treatment Actions (Delete & Re-insert directly into dbo.Risk_Action)
     await new sql.Request(transaction).input('RiskID', sql.BigInt, riskId).query(`DELETE FROM dbo.Risk_Action WHERE RiskID = @RiskID`);
     for (const act of actions) {
       if (act && act.TreatmentAction) {
@@ -652,7 +652,7 @@ const updateRisk = async (req, res) => {
           .input('Status', sql.NVarChar, act.Status || 'Open');
 
         await actReq.query(`
-          INSERT INTO dbo.RiskTreatmentAction (
+          INSERT INTO dbo.Risk_Action (
             RiskID, TreatmentStrategy, TreatmentAction, ActionOwner, TargetDate, Priority, RequiredBudget, ProgressPercent, Status
           ) VALUES (
             @RiskID, @TreatmentStrategy, @TreatmentAction, @ActionOwner, @TargetDate, @Priority, @RequiredBudget, @ProgressPercent, @Status
@@ -661,9 +661,9 @@ const updateRisk = async (req, res) => {
       }
     }
 
-    // 7. Update Acceptance
-    if (acceptance && (acceptance.AcceptedBy || acceptance.IsRequired || acceptance.AcceptanceReason)) {
-      await new sql.Request(transaction).input('RiskID', sql.BigInt, riskId).query(`DELETE FROM dbo.Risk_Acceptance WHERE RiskID = @RiskID`);
+    // 7. Update Acceptance (Delete & Re-insert directly into dbo.Risk_Acceptance)
+    await new sql.Request(transaction).input('RiskID', sql.BigInt, riskId).query(`DELETE FROM dbo.Risk_Acceptance WHERE RiskID = @RiskID`);
+    if (acceptance) {
       const accReq = new sql.Request(transaction);
       accReq
         .input('RiskID', sql.BigInt, riskId)
@@ -673,7 +673,7 @@ const updateRisk = async (req, res) => {
         .input('AcceptanceReason', sql.NVarChar, acceptance.AcceptanceReason || '');
 
       await accReq.query(`
-        INSERT INTO dbo.RiskAcceptance (
+        INSERT INTO dbo.Risk_Acceptance (
           RiskID, IsRequired, AcceptedBy, AcceptanceDate, AcceptanceReason
         ) VALUES (
           @RiskID, @IsRequired, @AcceptedBy, @AcceptanceDate, @AcceptanceReason
@@ -682,13 +682,17 @@ const updateRisk = async (req, res) => {
     }
 
     // 8. Create Audit Log
-    await createAuditLog(transaction, 'SYSTEM', 'UPDATE', 'RiskHeader', riskId, null, { RiskTitle: header.RiskTitle });
+    await createAuditLog(transaction, 'SYSTEM', 'UPDATE', 'Risk_Register', riskId, null, { RiskTitle: header.RiskTitle });
 
     await transaction.commit();
     res.json({ message: 'Risk updated successfully' });
 
   } catch (error) {
-    await transaction.rollback();
+    try {
+      await transaction.rollback();
+    } catch (rbErr) {
+      console.error('Rollback failed or transaction already aborted:', rbErr.message);
+    }
     console.error('Error updating risk:', error);
     res.status(500).json({
       message: 'Error updating risk: ' + (error.message || 'Unknown error'),
@@ -703,11 +707,12 @@ const deleteRisk = async (req, res) => {
   const { id } = req.params;
   try {
     const pool = await connectDB();
+    const riskId = parseBigInt(id);
     await pool.request()
-      .input('id', sql.BigInt, id)
-      .query(`UPDATE dbo.RiskHeader SET IsActive = 0, UpdatedDate = GETDATE() WHERE RiskID = @id`);
+      .input('id', sql.BigInt, riskId)
+      .query(`UPDATE dbo.Risk_Register SET IsActive = 0, UpdatedDate = GETDATE() WHERE RiskID = @id`);
 
-    await createAuditLog(null, 'SYSTEM', 'DELETE', 'RiskHeader', id, null, { Status: 'Soft Deleted' });
+    await createAuditLog(null, 'SYSTEM', 'DELETE', 'Risk_Register', riskId, null, { Status: 'Soft Deleted' });
     res.json({ message: 'Risk deleted successfully' });
   } catch (error) {
     console.error('Error deleting risk:', error);

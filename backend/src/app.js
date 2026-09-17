@@ -29,6 +29,17 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date(), service: 'IT Risk Assessment API' });
 });
 
+// Express Error Handling Middleware to ensure no request ever hangs without a response
+app.use((err, req, res, next) => {
+  console.error('💥 Unhandled Route Error:', err);
+  if (!res.headersSent) {
+    res.status(500).json({
+      message: 'เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์ (Internal Server Error): ' + (err.message || 'Unknown error'),
+      error: err.message || 'Unknown server error'
+    });
+  }
+});
+
 // Prevent process crashes on unhandled errors
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err.message, err.stack);
