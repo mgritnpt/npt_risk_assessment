@@ -94,6 +94,27 @@ CREATE TABLE dbo.[Master_Department] (
 );
 GO
 
+IF OBJECT_ID('dbo.User', 'U') IS NOT NULL DROP TABLE dbo.[User];
+GO
+
+CREATE TABLE dbo.[User] (
+    UserID BIGINT IDENTITY(1,1) PRIMARY KEY,
+    Username NVARCHAR(100) NOT NULL UNIQUE,
+    FullName NVARCHAR(200) NOT NULL,
+    Email NVARCHAR(200) NULL,
+    Role NVARCHAR(50) NOT NULL DEFAULT 'User',
+    DepartmentID BIGINT NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
+    CreateDate DATETIME2 NOT NULL DEFAULT GETDATE(),
+    CreatedBy NVARCHAR(100) NOT NULL DEFAULT 'system',
+    UpdatedDate DATETIME2 NOT NULL DEFAULT GETDATE(),
+    UpdatedBy NVARCHAR(100) NOT NULL DEFAULT 'system',
+    RowPointer UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    CONSTRAINT UQ_User_RowPointer UNIQUE(RowPointer),
+    CONSTRAINT FK_User_Department FOREIGN KEY(DepartmentID) REFERENCES dbo.Master_Department(DepartmentID)
+);
+GO
+
 IF OBJECT_ID('dbo.Master_Location', 'U') IS NOT NULL DROP TABLE dbo.[Master_Location];
 GO
 

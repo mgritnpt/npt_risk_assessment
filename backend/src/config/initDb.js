@@ -22,21 +22,20 @@ async function autoInitDatabase() {
     // 2. Connect to target database
     const pool = await connectDB();
 
-    // Check if key views/tables exist and if Risk_Register has sample data
+    // Check if key views/tables exist and function properly
     let needsInit = false;
     try {
-      const checkViews = await pool.request().query(`
-        SELECT COUNT(*) AS totalViews FROM sys.objects WHERE name IN ('RiskHeader', 'Master_StandardClause', 'AuditLog') AND type IN ('V', 'U')
-      `);
-      if (!checkViews.recordset || checkViews.recordset[0].totalViews < 3) {
+      await pool.request().query(`SELECT TOP 1 RiskID FROM dbo.RiskHeader`);
+      await pool.request().query(`SELECT TOP 1 ClauseID FROM dbo.Master_StandardClause`);
+      await pool.request().query(`SELECT TOP 1 LogID FROM dbo.AuditLog`);
+      await pool.request().query(`SELECT TOP 1 UserID FROM dbo.[User]`);
+      
+      const checkData = await pool.request().query(`SELECT COUNT(*) AS riskCount FROM dbo.Risk_Register`);
+      if (!checkData.recordset || checkData.recordset[0].riskCount === 0) {
         needsInit = true;
-      } else {
-        const checkData = await pool.request().query(`SELECT COUNT(*) AS riskCount FROM dbo.Risk_Register`);
-        if (!checkData.recordset || checkData.recordset[0].riskCount === 0) {
-          needsInit = true;
-        }
       }
     } catch (e) {
+      console.log('🔄 Missing or non-functional database objects detected:', e.message);
       needsInit = true;
     }
 
