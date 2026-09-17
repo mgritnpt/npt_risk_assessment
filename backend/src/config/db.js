@@ -3,7 +3,7 @@ require('dotenv').config();
 
 const config = {
   user: process.env.DB_USER || 'sa',
-  password: process.env.DB_PASSWORD || '*Adm@npt',
+  password: process.env.DB_PASSWORD || '',
   server: process.env.DB_SERVER || '127.0.0.1',
   port: parseInt(process.env.DB_PORT || '1433', 10),
   database: process.env.DB_NAME || 'IT_Apps',
