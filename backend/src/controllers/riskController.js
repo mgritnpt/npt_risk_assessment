@@ -441,7 +441,11 @@ const createRisk = async (req, res) => {
   } catch (error) {
     await transaction.rollback();
     console.error('Error creating risk:', error);
-    res.status(500).json({ message: 'Error creating risk', error: error.message });
+    res.status(500).json({
+      message: 'Error creating risk: ' + (error.message || 'Unknown error'),
+      error: error.message,
+      details: error.originalError?.info?.message || error.code || null
+    });
   }
 };
 
@@ -684,7 +688,11 @@ const updateRisk = async (req, res) => {
   } catch (error) {
     await transaction.rollback();
     console.error('Error updating risk:', error);
-    res.status(500).json({ message: 'Error updating risk', error: error.message });
+    res.status(500).json({
+      message: 'Error updating risk: ' + (error.message || 'Unknown error'),
+      error: error.message,
+      details: error.originalError?.info?.message || error.code || null
+    });
   }
 };
 
