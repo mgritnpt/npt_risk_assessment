@@ -34,47 +34,60 @@ VALUES
 
 INSERT INTO dbo.Master_Location (LocationCode, LocationName, Description)
 VALUES
-('LOC-HQ-BKK', N'สำนักงานใหญ่ กรุงเทพฯ (HQ Bangkok)', N'ศูนย์บริหารจัดการและทีม IT หลัก'),
-('LOC-PLANT1-CHON', N'โรงงานชลบุรี (Plant 1 Chonburi)', N'โรงงานผลิตสีพ่นรถยนต์ OEM (IATF 16949 / JAMA Requirement)'),
-('LOC-PLANT2-RAYONG', N'โรงงานระยอง (Plant 2 Rayong)', N'โรงงานผลิตสีอุตสาหกรรมและสีเคมีภัณฑ์'),
-('LOC-PLANT3-SAMUT', N'โรงงานสมุทรปราการ (Plant 3 Samut Prakan)', N'โรงงานผลิตเรซิ่นและผสมสีทาอาคาร'),
-('LOC-AWS-SINGAPORE', N'AWS Cloud Datacenter (Singapore Region)', N'ศูนย์ข้อมูลหลักบน Cloud AWS สภาพแวดล้อมระบบ SAP ECC6');
+('LOC-HQ-PPD',
+ N'สำนักงานใหญ่ พระประแดง สมุทรปราการ (Head Office – Prapradaeng)',
+ N'สำนักงานใหญ่และศูนย์บริหารงานของบริษัท รวมถึงการดำเนินงานด้าน Decorative Paint และ Auto-Refinish'),
+
+('LOC-PLANT1-BPK',
+ N'โรงงานบางปะกง ชลบุรี (Bangpakong Plant)',
+ N'โรงงานผลิต Automotive Coatings และ General Industrial Coatings รองรับงานเคลือบชิ้นส่วนยานยนต์และอุตสาหกรรม'),
+
+('LOC-PLANT2-AMATA',
+ N'โรงงานอมตะซิตี้ ชลบุรี (Amata City Chonburi)',
+ N'พื้นที่ดำเนินงานด้าน Industrial และ Automotive Coatings ในเขตนิคมอุตสาหกรรมอมตะซิตี้ ชลบุรี'),
+
+('LOC-RAYONG',
+ N'ระยอง (Rayong)',
+ N'พื้นที่ดำเนินงานและสนับสนุนธุรกิจในจังหวัดระยอง รวมถึง Depot / Distribution และกิจกรรมที่เกี่ยวข้องกับธุรกิจอุตสาหกรรม'),
+
+('LOC-AWS-SINGAPORE',
+ N'AWS Cloud – Singapore Region',
+ N'สภาพแวดล้อมศูนย์ข้อมูลบน Amazon Web Services (AWS) ใน Singapore Region สำหรับระบบสารสนเทศและบริการ Cloud ของบริษัท');
 
 INSERT INTO dbo.Master_Department (DepartmentCode, DepartmentName, ManagerName)
 VALUES
-('IT', N'Information Technology (ไอที)', N'สมชาย ใจดี'),
-('QA_QC', N'Quality Assurance & QC (ประกันคุณภาพสี)', N'กัญญา รักไทย'),
-('PROD_PAINT', N'Paint Manufacturing & Production (ฝ่ายผลิตสี)', N'อนันต์ มั่งคั่ง'),
-('SERVICE', N'Technical Coating Service (ฝ่ายบริการเทคนิคพ่นสี)', N'วิชัย บริการ'),
-('SCM', N'Supply Chain & Warehouse (คลังสินค้าและจัดส่ง)', N'สมศักดิ์ ขนส่ง'),
-('FIN_ACC', N'Finance & Accounting (การเงินและบัญชี)', N'วิภา บัญชี');
+('SSC-IT', N'Information Technology (ไอที)', N'Jaroenchai Wattananakakul'),
+('SSC-FA', N'Finance & Accounting (การเงินและบัญชี)', N'Jaroenchai Wattananakakul');
 
-INSERT INTO dbo.Master_Process (ProcessCode, ProcessName, DepartmentID, Description)
-VALUES
-('PROC-SAP', N'SAP ECC6 Cloud ERP Operations', 1, N'ระบบงานหลักสำหรับการวางแผนผลิตสี การขาย จัดซื้อ และบัญชี'),
-('PROC-TINT', N'Automated Paint Tinting & Mixing Process', 3, N'กระบวนการผสมสีอัตโนมัติเชื่อมต่อสั่งการจากระบบ IT/OT'),
-('PROC-PATCH', N'BigFix Endpoint Patching & EDR Deployment', 1, N'การอัปเดตแพตช์ความปลอดภัยเครื่อง PC/Server ในทุก Plant'),
-('PROC-SOC', N'Proficio 24/7 Managed SOC Incident Monitoring', 1, N'การเฝ้าระวังภัยคุกคามไซเบอร์ตลอด 24 ชั่วโมง'),
-('PROC-GLPI', N'GLPI IT Asset & Service Desk Operation', 1, N'ระบบบริหารจัดการทรัพย์สิน IT และแจ้งซ่อมบริการ');
 
-INSERT INTO dbo.Master_Asset (AssetCode, AssetName, AssetType, OwnerName, Criticality)
-VALUES
-('AST-AWS-SAP-APP', N'AWS SAP ECC6 ERP Application Cluster', N'Cloud AWS Server', N'สมชาย ใจดี', N'Critical'),
-('AST-AWS-SAP-DB', N'AWS SAP ECC6 Oracle Database Server', N'Cloud AWS Database', N'สมชาย ใจดี', N'Critical'),
-('AST-DC-PLANT1', N'Plant 1 Chonburi Local Active Directory Domain Controller', N'Local Windows Server', N'สมชาย ใจดี', N'High'),
-('AST-PLC-MIX01', N'Automated Color Tinting Machine PLC Gateway (Plant 1)', N'OT / Industrial Control', N'อนันต์ มั่งคั่ง', N'Critical'),
-('AST-SENTINEL-01', N'SentinelOne EDR & Proficio SIEM Gateway Collector', N'Security Appliance', N'สมชาย ใจดี', N'High'),
-('AST-BIGFIX-01', N'HCL BigFix Endpoint Patch Management Server', N'Management Server', N'สมชาย ใจดี', N'High');
+
+INSERT INTO dbo.Master_Process
+(    ProcessCode,    ProcessName,    DepartmentID,    Description)VALUES
+(    'PROC-ERP',    N'SAP ERP Business Operations',    1,    N'ระบบงานหลักที่สนับสนุนกระบวนการขาย จัดซื้อ วางแผนการผลิต สินค้าคงคลัง และบัญชีการเงิน'),
+(    'PROC-ITOT',    N'IT/OT Production Control & Paint Manufacturing',    3,    N'กระบวนการผลิตและควบคุมเครื่องจักรที่เชื่อมโยงระหว่างระบบ IT และ OT รวมถึงระบบ PLC และอุปกรณ์ควบคุมการผลิต'),
+(    'PROC-ENDPOINT',    N'Endpoint Security & Patch Management',    1,    N'การบริหารจัดการเครื่องคอมพิวเตอร์และเซิร์ฟเวอร์ การติดตั้ง Security Patch และการป้องกันภัยคุกคามจาก Endpoint'),
+(    'PROC-SOC',    N'Security Monitoring & Incident Response',    1,    N'การเฝ้าระวัง ตรวจจับ วิเคราะห์ และตอบสนองต่อเหตุการณ์ด้านความมั่นคงปลอดภัยสารสนเทศตลอด 24 ชั่วโมง'),
+(    'PROC-ITSM',    N'IT Service Desk & Asset Management',    1,    N'การรับแจ้งปัญหาและคำขอบริการ การบริหารทรัพย์สิน IT และการติดตามสถานะการให้บริการ IT');
+
+INSERT INTO dbo.Master_Asset
+(    AssetCode,    AssetName,    AssetType,    OwnerName,    Criticality)VALUES
+(    'AST-SAP-ERP',    N'SAP ERP Application Platform',    N'Enterprise Application',    N'IT Department',    N'Critical'),
+(    'AST-SAP-DB',    N'SAP ERP Database Platform',    N'Database',    N'IT Department',    N'Critical'),
+(    'AST-AD-DC-PLANT1',    N'Plant Active Directory Domain Controller',    N'Identity & Directory Services',    N'IT Department',    N'Critical'),
+(    'AST-OT-PLC-MIX01',    N'Paint Manufacturing PLC / Control Gateway',    N'OT / Industrial Control System',    N'Production / Engineering',    N'Critical'),
+(    'AST-SOC-SIEM',    N'Security Monitoring SIEM / SOC Integration Platform',    N'Security Monitoring Platform',    N'IT Department',    N'High'),
+(    'AST-EDR',    N'Endpoint Detection & Response Platform',    N'Endpoint Security Platform',    N'IT Department',    N'High'),
+(    'AST-PATCH',    N'Enterprise Patch Management Platform',    N'Patch Management Platform',    N'IT Department',    N'High'),
+(    'AST-IT Helpdesk',    N'IT Helpdesk & Asset Management Platform',    N'IT Service Management',    N'IT Department',    N'Meduim'
+);
 
 -- ============================================================================
 -- 2. SEED USERS (DEPENDS ON MASTER_DEPARTMENT)
 -- ============================================================================
 INSERT INTO dbo.[User] (Username, FullName, Email, Role, DepartmentID, CreatedBy)
 VALUES 
-('admin', N'System Administrator', 'admin@paint-coatings.co.th', 'Admin', NULL, 'SYSTEM'),
-('it.mgr', N'สมชาย ใจดี (IT Manager)', 'somchai.j@paint-coatings.co.th', 'Risk Owner', 1, 'SYSTEM'),
-('qa.lead', N'กัญญา รักไทย (QA & ISO Auditor)', 'kanya.r@paint-coatings.co.th', 'Auditor', 2, 'SYSTEM'),
-('ot.eng', N'อนันต์ มั่งคั่ง (Plant OT & Automation Engineer)', 'anan.m@paint-coatings.co.th', 'User', 3, 'SYSTEM');
+('admin', N'System Administrator', 'admin@nipponpaint.co.th', 'Admin', NULL, 'SYSTEM'),
+('kridsada', N'Kridsada Woraphatthanasetthi', 'kridsada@nipponpaint.co.th', 'Risk Owner', 1, 'SYSTEM');
 
 -- ============================================================================
 -- 3. SEED STANDARDS & CLAUSES
