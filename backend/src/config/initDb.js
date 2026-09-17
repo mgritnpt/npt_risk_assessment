@@ -56,9 +56,15 @@ async function autoInitDatabase() {
             try {
               await pool.request().query(cleaned);
             } catch (err) {
-              console.error(`❌ [${scriptName}] Batch ${i + 1} failed: ${err.message}`);
-              console.error('Failed SQL snippet:\n', cleaned.substring(0, 300));
-              throw err;
+              console.error(`❌ [${scriptName}] Batch ${i + 1} warning/failed: ${err.message}`);
+              console.error('SQL snippet (first 200 chars):\n', cleaned.substring(0, 200));
+              // If batch error is due to table already existing or FK drop, continue to next batches so views & seed data complete
+              const isNonFatal = err.message.includes('already an object named') ||
+                                 err.message.includes('already exists') ||
+                                 err.message.includes('Cannot drop table');
+              if (!isNonFatal) {
+                throw err;
+              }
             }
           }
         }

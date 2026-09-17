@@ -1,3 +1,49 @@
+/* Drop all existing compatibility views and triggers to release table dependencies */
+IF OBJECT_ID('dbo.TR_RiskHeader_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskHeader_InsteadOfInsert;
+IF OBJECT_ID('dbo.TR_RiskHeader_InsteadOfUpdate', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskHeader_InsteadOfUpdate;
+IF OBJECT_ID('dbo.TR_AuditLog_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_AuditLog_InsteadOfInsert;
+IF OBJECT_ID('dbo.TR_Master_StandardClause_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_Master_StandardClause_InsteadOfInsert;
+GO
+
+IF OBJECT_ID('dbo.RiskHeader', 'V') IS NOT NULL DROP VIEW dbo.RiskHeader;
+IF OBJECT_ID('dbo.RiskAssessment', 'V') IS NOT NULL DROP VIEW dbo.RiskAssessment;
+IF OBJECT_ID('dbo.RiskControl', 'V') IS NOT NULL DROP VIEW dbo.RiskControl;
+IF OBJECT_ID('dbo.RiskStandardMapping', 'V') IS NOT NULL DROP VIEW dbo.RiskStandardMapping;
+IF OBJECT_ID('dbo.RiskTreatmentAction', 'V') IS NOT NULL DROP VIEW dbo.RiskTreatmentAction;
+IF OBJECT_ID('dbo.RiskAcceptance', 'V') IS NOT NULL DROP VIEW dbo.RiskAcceptance;
+IF OBJECT_ID('dbo.AuditLog', 'V') IS NOT NULL DROP VIEW dbo.AuditLog;
+IF OBJECT_ID('dbo.Master_StandardClause', 'V') IS NOT NULL DROP VIEW dbo.Master_StandardClause;
+GO
+
+/* Migration safety: Add missing columns to existing tables if present */
+IF OBJECT_ID('dbo.Risk_Register', 'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH('dbo.Risk_Register', 'ThreatDescription') IS NULL ALTER TABLE dbo.Risk_Register ADD ThreatDescription NVARCHAR(3000) NULL;
+    IF COL_LENGTH('dbo.Risk_Register', 'VulnerabilityDescription') IS NULL ALTER TABLE dbo.Risk_Register ADD VulnerabilityDescription NVARCHAR(3000) NULL;
+    IF COL_LENGTH('dbo.Risk_Register', 'RootCause') IS NULL ALTER TABLE dbo.Risk_Register ADD RootCause NVARCHAR(3000) NULL;
+    IF COL_LENGTH('dbo.Risk_Register', 'ConsequenceDescription') IS NULL ALTER TABLE dbo.Risk_Register ADD ConsequenceDescription NVARCHAR(3000) NULL;
+    IF COL_LENGTH('dbo.Risk_Register', 'ExistingCondition') IS NULL ALTER TABLE dbo.Risk_Register ADD ExistingCondition NVARCHAR(3000) NULL;
+    IF COL_LENGTH('dbo.Risk_Register', 'PotentialImpact') IS NULL ALTER TABLE dbo.Risk_Register ADD PotentialImpact NVARCHAR(3000) NULL;
+    IF COL_LENGTH('dbo.Risk_Register', 'RiskStatement') IS NULL ALTER TABLE dbo.Risk_Register ADD RiskStatement NVARCHAR(3000) NULL;
+    IF COL_LENGTH('dbo.Risk_Register', 'RiskCause') IS NULL ALTER TABLE dbo.Risk_Register ADD RiskCause NVARCHAR(3000) NULL;
+    IF COL_LENGTH('dbo.Risk_Register', 'RiskConsequence') IS NULL ALTER TABLE dbo.Risk_Register ADD RiskConsequence NVARCHAR(3000) NULL;
+END;
+GO
+
+IF OBJECT_ID('dbo.Audit_Log', 'U') IS NOT NULL
+BEGIN
+    IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Audit_Log' AND COLUMN_NAME = 'RecordID' AND DATA_TYPE = 'bigint')
+        ALTER TABLE dbo.Audit_Log ALTER COLUMN RecordID NVARCHAR(200) NULL;
+END;
+GO
+
+IF OBJECT_ID('dbo.Global_RowPointer', 'U') IS NOT NULL
+BEGIN
+    IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Global_RowPointer' AND COLUMN_NAME = 'RecordID' AND DATA_TYPE = 'bigint')
+        ALTER TABLE dbo.Global_RowPointer ALTER COLUMN RecordID NVARCHAR(200) NULL;
+END;
+GO
+
 /* Disable and drop all foreign key constraints for safe table recreation */
 DECLARE @sql NVARCHAR(MAX) = N'';
 SELECT @sql += N'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + '.' + QUOTENAME(OBJECT_NAME(parent_object_id)) + 
