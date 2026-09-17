@@ -1507,6 +1507,233 @@ BEGIN
 END
 GO
 
+IF OBJECT_ID('dbo.TR_RiskHeader_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskHeader_InsteadOfInsert;
+GO
+CREATE TRIGGER dbo.TR_RiskHeader_InsteadOfInsert
+ON dbo.RiskHeader
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Risk_Register (
+        RiskNo, RiskTitle, RiskDescription, AssessmentDate, NextReviewDate,
+        RiskCategoryID, DepartmentID, ProcessID, LocationID, BUID, AssetID, OwnerID,
+        ThreatDescription, VulnerabilityDescription, RootCause, ConsequenceDescription,
+        ExistingCondition, PotentialImpact, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    )
+    SELECT 
+        i.RiskNo, i.RiskTitle, i.RiskDescription, ISNULL(i.AssessmentDate, GETDATE()), i.ReviewDate,
+        ISNULL(i.CategoryID, 1), ISNULL(i.DepartmentID, 1), i.ProcessID, i.LocationID, i.BUID, i.AssetID, ISNULL(i.RiskOwnerID, ISNULL(i.AssessorID, 1)),
+        i.Threat, i.Vulnerability, i.RiskCause, i.RiskConsequence,
+        i.ExistingCondition, i.PotentialImpact, 
+        CASE WHEN i.Status = 'Closed' OR i.IsActive = 0 THEN 0 ELSE 1 END,
+        GETDATE(), ISNULL(i.CreatedBy, 'system'), GETDATE(), ISNULL(i.UpdatedBy, 'system')
+    FROM inserted i;
+END;
+GO
+
+IF OBJECT_ID('dbo.TR_RiskHeader_InsteadOfUpdate', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskHeader_InsteadOfUpdate;
+GO
+CREATE TRIGGER dbo.TR_RiskHeader_InsteadOfUpdate
+ON dbo.RiskHeader
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE r
+    SET 
+        r.RiskNo = ISNULL(i.RiskNo, r.RiskNo),
+        r.RiskTitle = ISNULL(i.RiskTitle, r.RiskTitle),
+        r.RiskDescription = ISNULL(i.RiskDescription, r.RiskDescription),
+        r.AssessmentDate = ISNULL(i.AssessmentDate, r.AssessmentDate),
+        r.NextReviewDate = ISNULL(i.ReviewDate, r.NextReviewDate),
+        r.RiskCategoryID = ISNULL(i.CategoryID, r.RiskCategoryID),
+        r.DepartmentID = ISNULL(i.DepartmentID, r.DepartmentID),
+        r.ProcessID = ISNULL(i.ProcessID, r.ProcessID),
+        r.LocationID = ISNULL(i.LocationID, r.LocationID),
+        r.BUID = ISNULL(i.BUID, r.BUID),
+        r.AssetID = ISNULL(i.AssetID, r.AssetID),
+        r.OwnerID = ISNULL(i.RiskOwnerID, ISNULL(i.AssessorID, r.OwnerID)),
+        r.ThreatDescription = ISNULL(i.Threat, r.ThreatDescription),
+        r.VulnerabilityDescription = ISNULL(i.Vulnerability, r.VulnerabilityDescription),
+        r.RootCause = ISNULL(i.RiskCause, r.RootCause),
+        r.ConsequenceDescription = ISNULL(i.RiskConsequence, r.ConsequenceDescription),
+        r.ExistingCondition = ISNULL(i.ExistingCondition, r.ExistingCondition),
+        r.PotentialImpact = ISNULL(i.PotentialImpact, r.PotentialImpact),
+        r.IsActive = CASE WHEN i.Status = 'Closed' OR i.IsActive = 0 THEN 0 ELSE 1 END,
+        r.UpdatedDate = GETDATE()
+    FROM dbo.Risk_Register r
+    JOIN inserted i ON r.RiskID = i.RiskID;
+END;
+GO
+
+IF OBJECT_ID('dbo.RiskAssessment', 'V') IS NOT NULL DROP VIEW dbo.RiskAssessment;
+IF OBJECT_ID('dbo.RiskAssessment', 'U') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW dbo.RiskAssessment AS
+    SELECT 
+        AssessmentID, RiskID, AssessmentType, LikelihoodScore AS Likelihood, ImpactScore AS Impact,
+        ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact,
+        RiskScore, RiskLevel, AssessorID, AssessmentDate, Comments, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    FROM dbo.Risk_Assessment;
+    ');
+END
+GO
+
+IF OBJECT_ID('dbo.TR_RiskAssessment_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskAssessment_InsteadOfInsert;
+GO
+CREATE TRIGGER dbo.TR_RiskAssessment_InsteadOfInsert
+ON dbo.RiskAssessment
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Risk_Assessment (
+        RiskID, AssessmentType, LikelihoodScore, ImpactScore,
+        ConfidentialityImpact, IntegrityImpact, AvailabilityImpact, QualityImpact, FinancialImpact,
+        RiskLevel, AssessorID, Comments, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    )
+    SELECT 
+        i.RiskID, ISNULL(i.AssessmentType, 'INHERENT'), ISNULL(i.Likelihood, 1), ISNULL(i.Impact, 1),
+        i.ConfidentialityImpact, i.IntegrityImpact, i.AvailabilityImpact, i.QualityImpact, i.FinancialImpact,
+        i.RiskLevel, ISNULL(i.AssessorID, 1), i.Comments, 1, GETDATE(), 'system', GETDATE(), 'system'
+    FROM inserted i;
+END;
+GO
+
+IF OBJECT_ID('dbo.RiskControl', 'V') IS NOT NULL DROP VIEW dbo.RiskControl;
+IF OBJECT_ID('dbo.RiskControl', 'U') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW dbo.RiskControl AS
+    SELECT 
+        ControlID, RiskID, ControlCode, ControlName, ControlDescription, ControlType,
+        ManualOrAutomated, ControlOwner, Frequency, ControlEvidence, ControlEffectiveness,
+        IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    FROM dbo.Risk_Control;
+    ');
+END
+GO
+
+IF OBJECT_ID('dbo.TR_RiskControl_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskControl_InsteadOfInsert;
+GO
+CREATE TRIGGER dbo.TR_RiskControl_InsteadOfInsert
+ON dbo.RiskControl
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Risk_Control (
+        RiskID, ControlCode, ControlName, ControlDescription, ControlType,
+        ManualOrAutomated, ControlOwner, Frequency, ControlEvidence, ControlEffectiveness,
+        IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    )
+    SELECT 
+        i.RiskID, ISNULL(i.ControlCode, 'CTL-01'), i.ControlName, i.ControlDescription, i.ControlType,
+        i.ManualOrAutomated, i.ControlOwner, i.Frequency, i.ControlEvidence, i.ControlEffectiveness,
+        1, GETDATE(), 'system', GETDATE(), 'system'
+    FROM inserted i;
+END;
+GO
+
+IF OBJECT_ID('dbo.RiskStandardMapping', 'V') IS NOT NULL DROP VIEW dbo.RiskStandardMapping;
+IF OBJECT_ID('dbo.RiskStandardMapping', 'U') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW dbo.RiskStandardMapping AS
+    SELECT 
+        MappingID, RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status,
+        IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    FROM dbo.Risk_Standard;
+    ');
+END
+GO
+
+IF OBJECT_ID('dbo.TR_RiskStandardMapping_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskStandardMapping_InsteadOfInsert;
+GO
+CREATE TRIGGER dbo.TR_RiskStandardMapping_InsteadOfInsert
+ON dbo.RiskStandardMapping
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Risk_Standard (
+        RiskID, StandardID, ClauseID, ControlReference, ComplianceGap, Status,
+        IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    )
+    SELECT 
+        i.RiskID, i.StandardID, i.ClauseID, i.ControlReference, i.ComplianceGap, ISNULL(i.Status, 'Compliant'),
+        1, GETDATE(), 'system', GETDATE(), 'system'
+    FROM inserted i;
+END;
+GO
+
+IF OBJECT_ID('dbo.RiskTreatmentAction', 'V') IS NOT NULL DROP VIEW dbo.RiskTreatmentAction;
+IF OBJECT_ID('dbo.RiskTreatmentAction', 'U') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW dbo.RiskTreatmentAction AS
+    SELECT 
+        ActionID, RiskID, TreatmentStrategy, TreatmentAction, ActionOwner, TargetDate,
+        Priority, RequiredBudget, ProgressPercent, Status, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    FROM dbo.Risk_Action;
+    ');
+END
+GO
+
+IF OBJECT_ID('dbo.TR_RiskTreatmentAction_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskTreatmentAction_InsteadOfInsert;
+GO
+CREATE TRIGGER dbo.TR_RiskTreatmentAction_InsteadOfInsert
+ON dbo.RiskTreatmentAction
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Risk_Action (
+        RiskID, TreatmentStrategy, TreatmentAction, ActionOwner, TargetDate, Priority,
+        RequiredBudget, ProgressPercent, Status, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    )
+    SELECT 
+        i.RiskID, i.TreatmentStrategy, i.TreatmentAction, i.ActionOwner, i.TargetDate, ISNULL(i.Priority, 'Medium'),
+        ISNULL(i.RequiredBudget, 0), ISNULL(i.ProgressPercent, 0), ISNULL(i.Status, 'In Progress'),
+        1, GETDATE(), 'system', GETDATE(), 'system'
+    FROM inserted i;
+END;
+GO
+
+IF OBJECT_ID('dbo.RiskAcceptance', 'V') IS NOT NULL DROP VIEW dbo.RiskAcceptance;
+IF OBJECT_ID('dbo.RiskAcceptance', 'U') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW dbo.RiskAcceptance AS
+    SELECT 
+        AcceptanceID, RiskID, IsRequired, AcceptedBy, AcceptanceDate, AcceptanceReason, ReviewFrequency,
+        IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    FROM dbo.Risk_Acceptance;
+    ');
+END
+GO
+
+IF OBJECT_ID('dbo.TR_RiskAcceptance_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskAcceptance_InsteadOfInsert;
+GO
+CREATE TRIGGER dbo.TR_RiskAcceptance_InsteadOfInsert
+ON dbo.RiskAcceptance
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Risk_Acceptance (
+        RiskID, IsRequired, AcceptedBy, AcceptanceDate, AcceptanceReason, ReviewFrequency,
+        IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    )
+    SELECT 
+        i.RiskID, ISNULL(i.IsRequired, 1), i.AcceptedBy, ISNULL(i.AcceptanceDate, GETDATE()), i.AcceptanceReason, ISNULL(i.ReviewFrequency, 'Annual'),
+        1, GETDATE(), 'system', GETDATE(), 'system'
+    FROM inserted i;
+END;
+GO
+
 IF OBJECT_ID('dbo.AuditLog', 'V') IS NOT NULL DROP VIEW dbo.AuditLog;
 IF OBJECT_ID('dbo.AuditLog', 'U') IS NULL
 BEGIN
