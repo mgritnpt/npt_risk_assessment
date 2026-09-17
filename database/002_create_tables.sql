@@ -1586,9 +1586,9 @@ BEGIN
         LocationID,
         BUID,
         AssetID,
-        OwnerID AS RiskOwnerID,
-        OwnerID AS AssessorID,
-        OwnerID AS ApproverID,
+        RiskOwnerID,
+        AssessorID,
+        RiskOwnerID AS ApproverID,
         ThreatDescription AS Threat,
         VulnerabilityDescription AS Vulnerability,
         RootCause AS RiskCause,
@@ -1616,13 +1616,14 @@ BEGIN
     SET NOCOUNT ON;
     INSERT INTO dbo.Risk_Register (
         RiskNo, RiskTitle, RiskDescription, AssessmentDate, NextReviewDate,
-        RiskCategoryID, DepartmentID, ProcessID, LocationID, BUID, AssetID, OwnerID,
+        RiskCategoryID, DepartmentID, ProcessID, LocationID, BUID, AssetID, RiskOwnerID, AssessorID,
         ThreatDescription, VulnerabilityDescription, RootCause, ConsequenceDescription,
         ExistingCondition, PotentialImpact, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
     )
     SELECT 
         i.RiskNo, i.RiskTitle, i.RiskDescription, ISNULL(i.AssessmentDate, GETDATE()), i.ReviewDate,
-        ISNULL(i.CategoryID, 1), ISNULL(i.DepartmentID, 1), i.ProcessID, i.LocationID, i.BUID, i.AssetID, ISNULL(i.RiskOwnerID, ISNULL(i.AssessorID, 1)),
+        ISNULL(i.CategoryID, 1), ISNULL(i.DepartmentID, 1), i.ProcessID, i.LocationID, i.BUID, i.AssetID,
+        ISNULL(i.RiskOwnerID, 1), ISNULL(i.AssessorID, ISNULL(i.RiskOwnerID, 1)),
         i.Threat, i.Vulnerability, i.RiskCause, i.RiskConsequence,
         i.ExistingCondition, i.PotentialImpact, 
         CASE WHEN i.Status = 'Closed' OR i.IsActive = 0 THEN 0 ELSE 1 END,
@@ -1652,7 +1653,8 @@ BEGIN
         r.LocationID = ISNULL(i.LocationID, r.LocationID),
         r.BUID = ISNULL(i.BUID, r.BUID),
         r.AssetID = ISNULL(i.AssetID, r.AssetID),
-        r.OwnerID = ISNULL(i.RiskOwnerID, ISNULL(i.AssessorID, r.OwnerID)),
+        r.RiskOwnerID = ISNULL(i.RiskOwnerID, r.RiskOwnerID),
+        r.AssessorID = ISNULL(i.AssessorID, r.AssessorID),
         r.ThreatDescription = ISNULL(i.Threat, r.ThreatDescription),
         r.VulnerabilityDescription = ISNULL(i.Vulnerability, r.VulnerabilityDescription),
         r.RootCause = ISNULL(i.RiskCause, r.RootCause),
