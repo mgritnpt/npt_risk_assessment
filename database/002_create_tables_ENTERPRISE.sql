@@ -646,7 +646,7 @@ GO
 CREATE TABLE dbo.[Master_StandardRequirement] (
     RequirementID BIGINT IDENTITY(1,1) PRIMARY KEY,
     StandardID BIGINT NOT NULL,
-    ParentRequirementID BIGINT NOT NULL DEFAULT 0,
+    ParentRequirementID BIGINT NULL,
     RequirementCode NVARCHAR(100) NOT NULL,
     RequirementTitle NVARCHAR(500) NOT NULL,
     RequirementDescription NVARCHAR(3000) NULL,
@@ -1751,4 +1751,110 @@ BEGIN
     FROM dbo.Audit_Log;
     ');
 END
+GO
+
+IF OBJECT_ID('dbo.TR_AuditLog_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_AuditLog_InsteadOfInsert;
+GO
+CREATE TRIGGER dbo.TR_AuditLog_InsteadOfInsert
+ON dbo.AuditLog
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Audit_Log (
+        UserName, ActionType, TableName, RecordID, OldValue, NewValue, CreateDate
+    )
+    SELECT 
+        ISNULL(i.UserID, 'system'), ISNULL(i.Action, 'LOG'), ISNULL(i.TableName, 'System'),
+        i.RecordID, i.OldValue, i.NewValue, GETDATE()
+    FROM inserted i;
+END;
+GO
+
+IF OBJECT_ID('dbo.TR_RiskHeader_InsteadOfDelete', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_RiskHeader_InsteadOfDelete;
+GO
+CREATE TRIGGER dbo.TR_RiskHeader_InsteadOfDelete
+ON dbo.RiskHeader
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM dbo.Risk_Register WHERE RiskID IN (SELECT RiskID FROM deleted);
+END;
+GO
+
+/* ============================================================================
+   23. MASTER STANDARD CLAUSE COMPATIBILITY VIEW & TRIGGERS
+   ============================================================================ */
+
+IF OBJECT_ID('dbo.Master_StandardClause', 'V') IS NOT NULL DROP VIEW dbo.Master_StandardClause;
+IF OBJECT_ID('dbo.Master_StandardClause', 'U') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW dbo.Master_StandardClause AS
+    SELECT 
+        RequirementID AS ClauseID,
+        StandardID,
+        RequirementCode AS ClauseNo,
+        RequirementTitle AS ClauseTitle,
+        RequirementDescription AS Description,
+        IsActive,
+        CreateDate,
+        CreatedBy,
+        UpdatedDate,
+        UpdatedBy
+    FROM dbo.Master_StandardRequirement;
+    ');
+END
+GO
+
+IF OBJECT_ID('dbo.TR_Master_StandardClause_InsteadOfInsert', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_Master_StandardClause_InsteadOfInsert;
+GO
+CREATE TRIGGER dbo.TR_Master_StandardClause_InsteadOfInsert
+ON dbo.Master_StandardClause
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Master_StandardRequirement (
+        StandardID, ParentRequirementID, RequirementCode, RequirementTitle, RequirementDescription, RequirementType, IsActive, CreateDate, CreatedBy, UpdatedDate, UpdatedBy
+    )
+    SELECT 
+        i.StandardID, NULL, i.ClauseNo, i.ClauseTitle, i.Description, 'Clause', ISNULL(i.IsActive, 1), GETDATE(), ISNULL(i.CreatedBy, 'system'), GETDATE(), ISNULL(i.UpdatedBy, 'system')
+    FROM inserted i;
+END;
+GO
+
+IF OBJECT_ID('dbo.TR_Master_StandardClause_InsteadOfUpdate', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_Master_StandardClause_InsteadOfUpdate;
+GO
+CREATE TRIGGER dbo.TR_Master_StandardClause_InsteadOfUpdate
+ON dbo.Master_StandardClause
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE r
+    SET 
+        r.StandardID = ISNULL(i.StandardID, r.StandardID),
+        r.RequirementCode = ISNULL(i.ClauseNo, r.RequirementCode),
+        r.RequirementTitle = ISNULL(i.ClauseTitle, r.RequirementTitle),
+        r.RequirementDescription = ISNULL(i.Description, r.RequirementDescription),
+        r.IsActive = ISNULL(i.IsActive, r.IsActive),
+        r.UpdatedDate = GETDATE(),
+        r.UpdatedBy = ISNULL(i.UpdatedBy, 'system')
+    FROM dbo.Master_StandardRequirement r
+    JOIN inserted i ON r.RequirementID = i.ClauseID;
+END;
+GO
+
+IF OBJECT_ID('dbo.TR_Master_StandardClause_InsteadOfDelete', 'TR') IS NOT NULL DROP TRIGGER dbo.TR_Master_StandardClause_InsteadOfDelete;
+GO
+CREATE TRIGGER dbo.TR_Master_StandardClause_InsteadOfDelete
+ON dbo.Master_StandardClause
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM dbo.Master_StandardRequirement WHERE RequirementID IN (SELECT ClauseID FROM deleted);
+END;
 GO

@@ -19,35 +19,57 @@ async function autoInitDatabase() {
       console.log('Master DB check skipped:', e.message);
     }
 
-    // 2. Connect to IT_Apps database
+    // 2. Connect to target database
     const pool = await connectDB();
 
-    // Check if RiskHeader table exists
-    const checkTable = await pool.request().query(`
-      SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'RiskHeader'
-    `);
+    // Check if key views/tables exist and if Risk_Register has sample data
+    let needsInit = false;
+    try {
+      const checkViews = await pool.request().query(`
+        SELECT COUNT(*) AS totalViews FROM sys.objects WHERE name IN ('RiskHeader', 'Master_StandardClause', 'AuditLog') AND type IN ('V', 'U')
+      `);
+      if (!checkViews.recordset || checkViews.recordset[0].totalViews < 3) {
+        needsInit = true;
+      } else {
+        const checkData = await pool.request().query(`SELECT COUNT(*) AS riskCount FROM dbo.Risk_Register`);
+        if (!checkData.recordset || checkData.recordset[0].riskCount === 0) {
+          needsInit = true;
+        }
+      }
+    } catch (e) {
+      needsInit = true;
+    }
 
-    if (checkTable.recordset.length === 0) {
-      console.log('🔄 Initializing database tables and seed data...');
+    if (needsInit) {
+      console.log('🔄 Initializing database tables, compatibility views, and seed data...');
 
       const sqlDir = path.join(__dirname, '../../../database');
       const createTablesSql = fs.readFileSync(path.join(sqlDir, '002_create_tables.sql'), 'utf8');
       const seedDataSql = fs.readFileSync(path.join(sqlDir, '003_seed_data.sql'), 'utf8');
 
-      // Helper to split T-SQL by GO and strip USE statements
-      const runSqlBatches = async (sqlScript) => {
+      // Helper to split T-SQL by GO and strip USE statements with detailed batch error reporting
+      const runSqlBatches = async (sqlScript, scriptName) => {
         const batches = sqlScript.split(/^\s*GO\s*$/im);
-        for (const batch of batches) {
+        for (let i = 0; i < batches.length; i++) {
+          const batch = batches[i];
           const cleaned = batch.replace(/^\s*USE\s+[^\s;]+;?/im, '').trim();
           if (cleaned) {
-            await pool.request().query(cleaned);
+            try {
+              await pool.request().query(cleaned);
+            } catch (err) {
+              console.error(`❌ [${scriptName}] Batch ${i + 1} failed: ${err.message}`);
+              console.error('Failed SQL snippet:\n', cleaned.substring(0, 300));
+              throw err;
+            }
           }
         }
       };
 
-      await runSqlBatches(createTablesSql);
-      await runSqlBatches(seedDataSql);
-      console.log('✅ Database tables and seed data initialized successfully!');
+      await runSqlBatches(createTablesSql, '002_create_tables.sql');
+      await runSqlBatches(seedDataSql, '003_seed_data.sql');
+      console.log('✅ Database tables, compatibility views, and seed data initialized successfully!');
+    } else {
+      console.log('✅ Database schema and seed data verified.');
     }
   } catch (err) {
     console.error('⚠️ Database auto-initialization error (continuing...):', err.message);
